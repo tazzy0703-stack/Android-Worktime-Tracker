@@ -1,3 +1,28 @@
+#requires -Version 7.0
+$ErrorActionPreference = 'Stop'
+
+$ProjectRoot = Get-Location
+$ExpectedAppGradle = Join-Path $ProjectRoot 'app\build.gradle.kts'
+if (-not (Test-Path $ExpectedAppGradle)) {
+    throw "Bitte dieses Skript im Root des Repositories ausfuehren: C:\timetracking_android_project\Android-Worktime-Tracker"
+}
+
+function Write-Utf8File {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+
+    $Directory = Split-Path -Parent $Path
+    if (-not (Test-Path $Directory)) {
+        New-Item -Path $Directory -ItemType Directory -Force | Out-Null
+    }
+
+    Set-Content -Path $Path -Value $Content -Encoding UTF8
+}
+
+$MainActivityPath = Join-Path $ProjectRoot 'app\src\main\java\de\kai\arbeitszeitgeofence\MainActivity.kt'
+$MainActivity = @'
 package de.kai.arbeitszeitgeofence
 
 import android.Manifest
@@ -396,3 +421,14 @@ class MainActivity : ComponentActivity() {
             }
     }
 }
+'@
+Write-Utf8File -Path $MainActivityPath -Content $MainActivity
+
+$BuildGradlePath = Join-Path $ProjectRoot 'app\build.gradle.kts'
+$BuildGradle = Get-Content $BuildGradlePath -Raw
+$BuildGradle = $BuildGradle -replace 'versionCode = \d+', 'versionCode = 5'
+$BuildGradle = $BuildGradle -replace 'versionName = "[^"]+"', 'versionName = "0.3.1"'
+Set-Content -Path $BuildGradlePath -Value $BuildGradle -Encoding UTF8
+
+Write-Host "v0.3.1 Settings-Screen Patch wurde angewendet."
+Write-Host "Naechste Schritte: git status, git add ., git commit, git push."
