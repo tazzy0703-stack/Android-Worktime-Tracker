@@ -1,0 +1,4 @@
+package de.kai.arbeitszeitgeofence.domain
+import org.junit.*
+import java.time.Instant
+class TimeCalculatorTest { @Test fun calculatesNetAndBalanceWithoutRounding(){ val r=TimeCalculator.calculate(Instant.parse("2026-07-24T06:00:00Z"),Instant.parse("2026-07-24T14:30:00Z"),38,480); Assert.assertEquals(510,r.grossMinutes); Assert.assertEquals(38,r.breakMinutes); Assert.assertEquals(472,r.netMinutes); Assert.assertEquals(-8,r.balanceMinutes) } @Test fun flagsMissingPauseWithoutDeductingDefaultPause(){ val r=TimeCalculator.calculate(Instant.parse("2026-07-24T06:00:00Z"),Instant.parse("2026-07-24T14:00:00Z"),0,480); Assert.assertEquals(480,r.netMinutes); Assert.assertEquals(0,r.balanceMinutes); Assert.assertNotNull(r.warning) } @Test(expected=IllegalArgumentException::class) fun rejectsEndBeforeStart(){ TimeCalculator.calculate(Instant.parse("2026-07-24T14:00:00Z"),Instant.parse("2026-07-24T06:00:00Z"),0,480) } }
