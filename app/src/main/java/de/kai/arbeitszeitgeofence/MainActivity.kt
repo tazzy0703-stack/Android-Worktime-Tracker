@@ -22,23 +22,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.kai.arbeitszeitgeofence.data.SettingsEntity
 import de.kai.arbeitszeitgeofence.domain.TimeCalculator
-import de.kai.arbeitszeitgeofence.domain.TrackingSource
 import de.kai.arbeitszeitgeofence.domain.WorkSessionManager
-import kotlinx.coroutines.launch
+import de.kai.arbeitszeitgeofence.service.TrackingForegroundService
 import java.time.Instant
-import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) {
-        // Permission result is handled in later UI hardening.
+        // Permission result is intentionally displayed in a later status screen.
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,7 +54,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                val scope = rememberCoroutineScope()
                 val entries by dao.observeEntries().collectAsState(initial = emptyList())
                 val activeState by dao.observeActiveState().collectAsState(initial = null)
                 val settings by dao.observeSettings().collectAsState(initial = null)
@@ -88,29 +84,13 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Text(
-                        text = "Status: ${
-                            if (state.isTracking) {
-                                "Arbeitszeit läuft"
-                            } else {
-                                "Gestoppt"
-                            }
-                        } / Geofence: ${
-                            if (state.insideGeofence) {
-                                "Innen"
-                            } else {
-                                "Außen"
-                            }
-                        }"
+                        text = "Status: ${if (state.isTracking) "Arbeitszeit laeuft" else "Gestoppt"} / " +
+                            "Geofence: ${if (state.insideGeofence) "Innen" else "Aussen"}"
                     )
 
                     Text(
-                        text = "Pause: ${state.accumulatedBreakMinutes} min${
-                            if (state.isBreakRunning) {
-                                " + laufend"
-                            } else {
-                                ""
-                            }
-                        }"
+                        text = "Pause: ${state.accumulatedBreakMinutes} min" +
+                            if (state.isBreakRunning) " + laufend" else ""
                     )
 
                     Text(text = message)
@@ -118,19 +98,11 @@ class MainActivity : ComponentActivity() {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {
-                                scope.launch {
-                                    val current = dao.getActiveState()
-                                        ?: WorkSessionManager.initialState()
-
-                                    val newState = WorkSessionManager.startWork(
-                                        state = current,
-                                        now = Instant.now(),
-                                        insideGeofence = current.insideGeofence
-                                    )
-
-                                    dao.upsertActiveState(newState)
-                                    message = "Manuell gestartet"
-                                }
+                                TrackingForegroundService.start(
+                                    this@MainActivity,
+                                    TrackingForegroundService.ACTION_START
+                                )
+                                message = "Manuell gestartet"
                             }
                         ) {
                             Text("Start")
@@ -138,28 +110,11 @@ class MainActivity : ComponentActivity() {
 
                         Button(
                             onClick = {
-                                scope.launch {
-                                    val current = dao.getActiveState()
-                                        ?: WorkSessionManager.initialState()
-
-                                    val stopResult = WorkSessionManager.stopWork(
-                                        state = current,
-                                        now = Instant.now(),
-                                        localDate = LocalDate.now(),
-                                        source = TrackingSource.Manual,
-                                        comment = "Manuell gestoppt"
-                                    )
-
-                                    val newState = stopResult.first
-                                    val entry = stopResult.second
-
-                                    if (entry != null) {
-                                        dao.insertEntry(entry)
-                                    }
-
-                                    dao.upsertActiveState(newState)
-                                    message = "Manuell gestoppt"
-                                }
+                                TrackingForegroundService.start(
+                                    this@MainActivity,
+                                    TrackingForegroundService.ACTION_STOP
+                                )
+                                message = "Manuell gestoppt"
                             }
                         ) {
                             Text("Stop")
@@ -169,18 +124,11 @@ class MainActivity : ComponentActivity() {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = {
-                                scope.launch {
-                                    val current = dao.getActiveState()
-                                        ?: WorkSessionManager.initialState()
-
-                                    val newState = WorkSessionManager.startBreak(
-                                        state = current,
-                                        now = Instant.now()
-                                    )
-
-                                    dao.upsertActiveState(newState)
-                                    message = "Pause gestartet"
-                                }
+                                TrackingForegroundService.start(
+                                    this@MainActivity,
+                                    TrackingForegroundService.ACTION_PAUSE_START
+                                )
+                                message = "Pause gestartet"
                             }
                         ) {
                             Text("Pause Start")
@@ -188,18 +136,11 @@ class MainActivity : ComponentActivity() {
 
                         Button(
                             onClick = {
-                                scope.launch {
-                                    val current = dao.getActiveState()
-                                        ?: WorkSessionManager.initialState()
-
-                                    val newState = WorkSessionManager.stopBreak(
-                                        state = current,
-                                        now = Instant.now()
-                                    )
-
-                                    dao.upsertActiveState(newState)
-                                    message = "Pause gestoppt"
-                                }
+                                TrackingForegroundService.start(
+                                    this@MainActivity,
+                                    TrackingForegroundService.ACTION_PAUSE_STOP
+                                )
+                                message = "Pause gestoppt"
                             }
                         ) {
                             Text("Pause Stop")
@@ -207,13 +148,11 @@ class MainActivity : ComponentActivity() {
                     }
 
                     Text(
-                        text = "Einträge",
+                        text = "Eintraege",
                         style = MaterialTheme.typography.titleLarge
                     )
 
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(entries) { entry ->
                             val calculation = TimeCalculator.calculate(
                                 start = Instant.ofEpochMilli(entry.startEpochMillis),
