@@ -1,3 +1,72 @@
+#requires -Version 7.0
+$ErrorActionPreference = 'Stop'
+
+$ProjectRoot = Get-Location
+$ExpectedAppGradle = Join-Path $ProjectRoot 'app\build.gradle.kts'
+if (-not (Test-Path $ExpectedAppGradle)) {
+    throw "Bitte dieses Skript im Root des Repositories ausfuehren: C:\timetracking_android_project\Android-Worktime-Tracker"
+}
+
+function Write-Utf8File {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+    $Directory = Split-Path -Parent $Path
+    if (-not (Test-Path $Directory)) {
+        New-Item -Path $Directory -ItemType Directory -Force | Out-Null
+    }
+    Set-Content -Path $Path -Value $Content -Encoding UTF8
+}
+
+# 1) Geofence receiver is diagnostic only in v0.3.0.
+$ReceiverPath = Join-Path $ProjectRoot 'app\src\main\java\de\kai\arbeitszeitgeofence\geofence\GeofenceBroadcastReceiver.kt'
+$Receiver = @'
+package de.kai.arbeitszeitgeofence.geofence
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingEvent
+import de.kai.arbeitszeitgeofence.ArbeitszeitApp
+import de.kai.arbeitszeitgeofence.domain.WorkSessionManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+class GeofenceBroadcastReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val event = GeofencingEvent.fromIntent(intent) ?: return
+        if (event.hasError()) return
+
+        val app = context.applicationContext as ArbeitszeitApp
+        val pendingResult = goAsync()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val dao = app.database.workTimeDao()
+                val state = dao.getActiveState() ?: WorkSessionManager.initialState()
+
+                val newState = when (event.geofenceTransition) {
+                    Geofence.GEOFENCE_TRANSITION_ENTER -> state.copy(insideGeofence = true)
+                    Geofence.GEOFENCE_TRANSITION_EXIT -> state.copy(insideGeofence = false)
+                    else -> state
+                }
+
+                dao.upsertActiveState(newState)
+            } finally {
+                pendingResult.finish()
+            }
+        }
+    }
+}
+'@
+Write-Utf8File -Path $ReceiverPath -Content $Receiver
+
+# 2) MainActivity with geofence configuration UI.
+$MainActivityPath = Join-Path $ProjectRoot 'app\src\main\java\de\kai\arbeitszeitgeofence\MainActivity.kt'
+$MainActivity = @'
 package de.kai.arbeitszeitgeofence
 
 import android.Manifest
@@ -306,3 +375,15 @@ class MainActivity : ComponentActivity() {
             }
     }
 }
+'@
+Write-Utf8File -Path $MainActivityPath -Content $MainActivity
+
+# 3) Version bump.
+$BuildGradlePath = Join-Path $ProjectRoot 'app\build.gradle.kts'
+$BuildGradle = Get-Content $BuildGradlePath -Raw
+$BuildGradle = $BuildGradle -replace 'versionCode = \d+', 'versionCode = 4'
+$BuildGradle = $BuildGradle -replace 'versionName = "[^"]+"', 'versionName = "0.3.0"'
+Set-Content -Path $BuildGradlePath -Value $BuildGradle -Encoding UTF8
+
+Write-Host "v0.3.0 Geofence-Konfiguration Patch wurde angewendet."
+Write-Host "Naechste Schritte: git status, git add ., git commit, git push."
