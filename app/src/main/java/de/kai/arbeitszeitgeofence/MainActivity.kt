@@ -35,7 +35,6 @@ import de.kai.arbeitszeitgeofence.domain.WorkSessionManager
 import de.kai.arbeitszeitgeofence.geofence.GeofenceManager
 import de.kai.arbeitszeitgeofence.service.TrackingForegroundService
 import kotlinx.coroutines.launch
-import withContext
 import java.time.Instant
 
 class MainActivity : ComponentActivity() {
@@ -298,7 +297,7 @@ class MainActivity : ComponentActivity() {
                             geofenceRadiusMeters = radiusMeters
                         )
                     )
-                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    runOnUiThread {
                         onMessage("Arbeitsplatz-Koordinate gespeichert")
                     }
                 }
@@ -308,4 +307,6 @@ class MainActivity : ComponentActivity() {
             }
     }
 }
+
+
 
