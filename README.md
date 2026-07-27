@@ -11,86 +11,27 @@ Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im Arb
 
 ---
 
-## Funktionsumfang
-
-### Zeiterfassung
+## Kernfunktionen
 
 - Automatischer Start per Geofence ENTER
 - Automatischer Stop per Geofence EXIT
 - Manuelles Starten und Stoppen
-- Manuelles Starten und Stoppen von Pausen
-- Sichtbare Android-Benachrichtigung während laufender Arbeitszeit
-- Notification-Aktionen:
-  - Stop
-  - Pause Start
-  - Pause Stop
-
-### Geofence
-
-- Arbeitsplatz per aktueller Position speichern
-- Arbeitsplatz-Marker per langem Druck auf die Karte setzen
-- Radius in Metern editierbar
+- Manuelle Pause
+- Permanente Android-Benachrichtigung während laufender Arbeitszeit
+- Tagesabschluss manuell und automatisch
+- Tag-/Woche-/Monat-/Jahr-Ansichten
+- Bearbeitung und Löschung von Einträgen
+- App Reset
+- Editierbare Arbeitszeitparameter
 - OpenStreetMap/osmdroid-Kartenansicht
-- Geofence registrieren und entfernen
-
-### Auswertung
-
-- Ansicht nach:
-  - Tag
-  - Woche
-  - Monat
-  - Jahr
-- Anzeige von:
-  - Bruttozeit
-  - Pause
-  - Nettozeit
-  - Sollzeit
-  - Saldo
-  - Anzahl Einträge
-  - Tage mit Einträgen
-
-### Tagesabschluss
-
-- Manueller Tagesabschluss
-- Automatischer Tagesabschluss über geplanten Worker
-- Standardzeit aktuell: `23:59`
-- Laufender Block wird bei Tagesabschluss geschlossen
-- Quelle:
-  - `DayClose`
-- Kommentare:
-  - `Manueller Tagesabschluss`
-  - `Automatischer Tagesabschluss`
-
-### Bearbeitung / Reset
-
-- Einträge bearbeiten
-  - Startzeit
-  - Endzeit
-  - Pausenzeit
-  - Kommentar
-- Einzelne Einträge löschen
-- Alle Einträge löschen
-- App Reset:
-  - Einträge löschen
-  - Tracking-State zurücksetzen
-  - Einstellungen auf Standard setzen
-
-### Einstellungen
-
-- Sollzeit pro Tag in Minuten
-- Standardpause in Minuten
-- Tagesabschlusszeit im Format `HH:mm`
-- Geofence-Radius
-- Arbeitsplatz-Koordinate
-- Schicht über Mitternacht ist vorbereitet, aktuell aber noch deaktiviert
 
 ---
 
 ## Installation
 
-Die App wird aktuell nicht über den Play Store verteilt.
+Die App wird aktuell privat verteilt und nicht über den Play Store veröffentlicht.
 
-Installation erfolgt über die signierte Release-APK aus GitHub Actions:
+Installiert wird die signierte Release-APK aus GitHub Actions:
 
 ```text
 Actions
@@ -99,3 +40,52 @@ Actions
 → Artifacts
 → ArbeitszeitGeofence-release-apk
 → app-release.apk
+```
+
+Wichtig:
+
+```text
+Immer app-release.apk verwenden.
+Nicht app-debug.apk für produktive Tests nutzen.
+```
+
+---
+
+## Dokumentation
+
+Weitere Unterlagen liegen unter:
+
+```text
+docs/
+design/
+```
+
+Wichtige Dateien:
+
+- [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
+- [`docs/ROADMAP.md`](docs/ROADMAP.md)
+- [`docs/TESTPLAN.md`](docs/TESTPLAN.md)
+- [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
+- [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md)
+- [`design/MATRIX_THEME.md`](design/MATRIX_THEME.md)
+
+---
+
+## Private Nutzung
+
+Diese App ist für private Nutzung und begrenzte Verteilung vorgesehen.
+
+Eine Veröffentlichung im Google Play Store ist aktuell nicht geplant, da der Aufwand für Store-Policy, Background-Location-Freigabe, Store-Listing und Review für den kleinen Nutzerkreis nicht sinnvoll ist.
+
+---
+
+## Lizenz / Nutzung
+
+Private App.
+
+```text
+Copyright (c) 2026 Kai Becker.
+All rights reserved.
+```
+
+Keine öffentliche Open-Source-Lizenz.

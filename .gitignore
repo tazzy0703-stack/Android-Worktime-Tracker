@@ -38,6 +38,8 @@ Thumbs.db
 *.p12
 *.pem
 *.key
+local-signing/
+arbeitszeit-release-base64.txt
 
 # Google / Firebase secrets
 google-services.json
@@ -45,3 +47,7 @@ google-services.json
 *.tmp
 *.bak
 *.swp
+
+# Generated APKs / bundles
+*.apk
+*.aab
