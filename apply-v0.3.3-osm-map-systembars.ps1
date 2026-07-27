@@ -1,3 +1,48 @@
+#requires -Version 7.0
+$ErrorActionPreference = 'Stop'
+
+$ProjectRoot = Get-Location
+$BuildGradlePath = Join-Path $ProjectRoot 'app\build.gradle.kts'
+$ManifestPath = Join-Path $ProjectRoot 'app\src\main\AndroidManifest.xml'
+$MainActivityPath = Join-Path $ProjectRoot 'app\src\main\java\de\kai\arbeitszeitgeofence\MainActivity.kt'
+
+if (-not (Test-Path $BuildGradlePath)) { throw "app/build.gradle.kts nicht gefunden. Bitte im Repository-Root ausfuehren." }
+if (-not (Test-Path $ManifestPath)) { throw "AndroidManifest.xml nicht gefunden. Bitte im Repository-Root ausfuehren." }
+if (-not (Test-Path $MainActivityPath)) { throw "MainActivity.kt nicht gefunden. Bitte im Repository-Root ausfuehren." }
+
+function Write-Utf8File {
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        [Parameter(Mandatory)][string]$Content
+    )
+    $Directory = Split-Path -Parent $Path
+    if (-not (Test-Path $Directory)) { New-Item -Path $Directory -ItemType Directory -Force | Out-Null }
+    Set-Content -Path $Path -Value $Content -Encoding UTF8
+}
+
+# 1) Gradle: osmdroid dependency, version bump, targetSdk back to 34 to avoid Android 15 edge-to-edge enforcement while we harden UI.
+$BuildGradle = Get-Content -Path $BuildGradlePath -Raw
+if ($BuildGradle -notmatch 'org\.osmdroid:osmdroid-android') {
+    $Pattern = 'implementation\("com\.google\.android\.gms:play-services-location:21\.3\.0"\)'
+    $Replacement = "implementation(""com.google.android.gms:play-services-location:21.3.0"")`n    implementation(""org.osmdroid:osmdroid-android:6.1.18"")"
+    $BuildGradle = $BuildGradle.Replace($Pattern, $Replacement)
+}
+$BuildGradle = $BuildGradle -replace 'targetSdk = \d+', 'targetSdk = 34'
+$BuildGradle = $BuildGradle -replace 'versionCode = \d+', 'versionCode = 7'
+$BuildGradle = $BuildGradle -replace 'versionName = "[^"]+"', 'versionName = "0.3.3"'
+Set-Content -Path $BuildGradlePath -Value $BuildGradle -Encoding UTF8
+
+# 2) Manifest: add internet permissions for OSM tiles; keep existing app/service definitions stable.
+$Manifest = Get-Content -Path $ManifestPath -Raw
+if ($Manifest -notmatch 'android\.permission\.INTERNET') {
+    $PostNotificationsPermission = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />'
+    $NetworkPermissions = "<uses-permission android:name=""android.permission.POST_NOTIFICATIONS"" />`n    <uses-permission android:name=""android.permission.INTERNET"" />`n    <uses-permission android:name=""android.permission.ACCESS_NETWORK_STATE"" />"
+    $Manifest = $Manifest.Replace($PostNotificationsPermission, $NetworkPermissions)
+}
+Set-Content -Path $ManifestPath -Value $Manifest -Encoding UTF8
+
+# 3) MainActivity: settings screen with OpenStreetMap preview and explicit system bar colors.
+$MainActivity = @'
 package de.kai.arbeitszeitgeofence
 
 import android.Manifest
@@ -484,3 +529,10 @@ class MainActivity : ComponentActivity() {
             }
     }
 }
+'@
+Write-Utf8File -Path $MainActivityPath -Content $MainActivity
+
+Write-Host "v0.3.3 OSM-Karte + Systemleisten Patch wurde angewendet."
+Write-Host "Pruefen: git diff -- app/build.gradle.kts app/src/main/AndroidManifest.xml app/src/main/java/de/kai/arbeitszeitgeofence/MainActivity.kt"
+Write-Host "Danach: git add ., git commit -m 'Add OSM geofence map preview and system bar fix', git push origin main"
+
