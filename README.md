@@ -1,4 +1,4 @@
-# Arbeitszeit Geofence
+# Arbeitszeit Geofence Vibe Coded
 
 Private Android-App zur automatischen Arbeitszeiterfassung per Arbeitsplatz-Geofence.
 
