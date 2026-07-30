@@ -1,4 +1,4 @@
-package de.kai.arbeitszeitgeofence
+﻿package de.kai.arbeitszeitgeofence
 
 import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
 import android.Manifest
@@ -38,6 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import de.kai.arbeitszeitgeofence.ui.MatrixGreen
+import de.kai.arbeitszeitgeofence.ui.MatrixRed
+
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -310,7 +314,18 @@ class MainActivity : ComponentActivity() {
                 Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}")
                 summary.dayOverride?.let { Text("Sondertag: ${it.type}${if (it.comment.isNotBlank()) " - ${it.comment}" else ""}") }
                 Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}")
-                Text("Soll: ${formatMinutes(summary.targetMinutes)} | Ueberstunden: ${formatSignedMinutes(summary.balanceMinutes)}")
+                Text(
+    "Soll: ${formatMinutes(summary.targetMinutes)}"
+)
+
+Text(
+    text = "Saldo: ${formatSignedMinutes(summary.balanceMinutes)}",
+    color = when {
+        summary.balanceMinutes > 0 -> MatrixGreen
+        summary.balanceMinutes < 0 -> MatrixRed
+        else -> Color.Gray
+    }
+)
                 Text("Bloecke: ${summary.entries.size}")
                 if (summary.entries.isNotEmpty()) Button(onClick = onDetails) { Text("Details") }
             }
@@ -327,7 +342,14 @@ class MainActivity : ComponentActivity() {
                 Text("Pause: ${formatMinutes(summary.breakMinutes)}")
                 Text("Netto: ${formatMinutes(summary.netMinutes)}")
                 Text("Soll: ${formatMinutes(summary.targetMinutes)}")
-                Text("Saldo: ${formatSignedMinutes(summary.balanceMinutes)}")
+                Text(
+    text = "Saldo: ${formatSignedMinutes(summary.balanceMinutes)}",
+    color = when {
+        summary.balanceMinutes > 0 -> MatrixGreen
+        summary.balanceMinutes < 0 -> MatrixRed
+        else -> Color.Gray
+    }
+)
             }
         }
     }
@@ -478,7 +500,7 @@ class MainActivity : ComponentActivity() {
                     }) { Text("Geofence registrieren") }
                     Button(onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
                 }
-                Text("© OpenStreetMap contributors")
+                Text("Â© OpenStreetMap contributors")
             }
         }
     }
@@ -816,3 +838,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
