@@ -1,5 +1,6 @@
 package de.kai.arbeitszeitgeofence
 
+import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
 import android.Manifest
 import android.annotation.SuppressLint
 import android.graphics.Color
@@ -171,8 +172,12 @@ class MainActivity : ComponentActivity() {
                     Text("Status: ${if (state.isTracking) "Arbeitszeit laeuft" else "Gestoppt"} / Geofence: ${if (state.insideGeofence) "Innen" else "Aussen"}")
                     Text("Pause: ${state.accumulatedBreakMinutes} min${if (state.isBreakRunning) " + laufend" else ""}")
                     Text(message)
+					HeroStatusCard(
+					isTracking = state.isTracking,
+					pauseMinutes = state.accumulatedBreakMinutes,
+					insideGeofence = state.insideGeofence )
 
-                    when (selectedScreen) {
+					when (selectedScreen) {
                         AppScreen.Times -> TimesScreen(
                             modifier = Modifier.weight(1f),
                             dao = dao,
