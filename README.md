@@ -13,17 +13,17 @@ Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im Arb
 
 ## Kernfunktionen
 
-- Automatischer Start per Geofence ENTER
-- Automatischer Stop per Geofence EXIT
-- Manuelles Starten und Stoppen
-- Manuelle Pause
-- Permanente Android-Benachrichtigung während laufender Arbeitszeit
-- Tagesabschluss manuell und automatisch
-- Tag-/Woche-/Monat-/Jahr-Ansichten
-- Bearbeitung und Löschung von Einträgen
-- App Reset
-- Editierbare Arbeitszeitparameter
-- OpenStreetMap/osmdroid-Kartenansicht
+-   Automatischer Start per Geofence ENTER
+-   Automatischer Stop per Geofence EXIT
+-   Manuelles Starten und Stoppen
+-   Manuelle Pause
+-   Permanente Android-Benachrichtigung während laufender Arbeitszeit
+-   Tagesabschluss manuell und automatisch
+-   Tag-/Woche-/Monat-/Jahr-Ansichten
+-   Bearbeitung und Löschung von Einträgen
+-   App Reset
+-   Editierbare Arbeitszeitparameter
+-   OpenStreetMap/osmdroid-Kartenansicht
 
 ---
 
@@ -62,12 +62,12 @@ design/
 
 Wichtige Dateien:
 
-- [`docs/CHANGELOG.md`](docs/CHANGELOG.md)
-- [`docs/ROADMAP.md`](docs/ROADMAP.md)
-- [`docs/TESTPLAN.md`](docs/TESTPLAN.md)
-- [`docs/INSTALLATION.md`](docs/INSTALLATION.md)
-- [`docs/RELEASE_PROCESS.md`](docs/RELEASE_PROCESS.md)
-- [`design/MATRIX_THEME.md`](design/MATRIX_THEME.md)
+-   [`docs/CHANGELOG.md`](http://localhost:52555/Static24Q2y6E8/externalProject/docs/CHANGELOG.md)
+-   [`docs/ROADMAP.md`](http://localhost:52555/Static24Q2y6E8/externalProject/docs/ROADMAP.md)
+-   [`docs/TESTPLAN.md`](http://localhost:52555/Static24Q2y6E8/externalProject/docs/TESTPLAN.md)
+-   [`docs/INSTALLATION.md`](http://localhost:52555/Static24Q2y6E8/externalProject/docs/INSTALLATION.md)
+-   [`docs/RELEASE_PROCESS.md`](http://localhost:52555/Static24Q2y6E8/externalProject/docs/RELEASE_PROCESS.md)
+-   [`design/MATRIX_THEME.md`](http://localhost:52555/Static24Q2y6E8/externalProject/design/MATRIX_THEME.md)
 
 ---
 
