@@ -1,4 +1,4 @@
-﻿package de.kai.arbeitszeitgeofence
+package de.kai.arbeitszeitgeofence
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -147,40 +147,6 @@ class MainActivity : ComponentActivity() {
                     if (dao.getSettings() == null) dao.upsertSettings(SettingsEntity())
                     DayCloseWorker.scheduleNext(this@MainActivity)
                 }
-
-    @Composable
-    private fun HeroStatusCard(
-        isTracking: Boolean,
-        pauseMinutes: Int,
-        insideGeofence: Boolean
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-
-                Text(
-                    text = if (isTracking)
-                        "🟢 ARBEITSZEIT AKTIV"
-                    else
-                        "⚫ GESTOPPT",
-                    style = MaterialTheme.typography.titleLarge
-                )
-
-                Text("Pause: $pauseMinutes Minuten")
-
-                Text(
-                    if (insideGeofence)
-                        "📍 Arbeitsplatz erkannt"
-                    else
-                        "📍 Außerhalb des Geofence"
-                )
-            }
-        }
-    }
-
 
                 LaunchedEffect(settings) {
                     val effective = settings ?: SettingsEntity()
@@ -507,7 +473,7 @@ class MainActivity : ComponentActivity() {
                     }) { Text("Geofence registrieren") }
                     Button(onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
                 }
-                Text("Â© OpenStreetMap contributors")
+                Text("© OpenStreetMap contributors")
             }
         }
     }
@@ -845,4 +811,3 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
