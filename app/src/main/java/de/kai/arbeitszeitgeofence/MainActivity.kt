@@ -347,7 +347,7 @@ Text(
     color = when {
         summary.balanceMinutes > 0 -> MatrixGreen
         summary.balanceMinutes < 0 -> MatrixRed
-        else -> Color.Gray
+        else -> ComposeColor.Gray
     }
 )
             }
