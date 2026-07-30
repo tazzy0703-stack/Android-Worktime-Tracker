@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import de.kai.arbeitszeitgeofence.data.DayOverrideEntity
 import de.kai.arbeitszeitgeofence.data.SettingsEntity
 import de.kai.arbeitszeitgeofence.data.WorkTimeDao
 import de.kai.arbeitszeitgeofence.data.WorkTimeEntryEntity
@@ -59,7 +58,6 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polygon
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -70,21 +68,9 @@ import java.time.temporal.WeekFields
 private enum class AppScreen { Times, Settings }
 private enum class TimeView(val label: String) { Day("Tag"), Week("Woche"), Month("Monat"), Year("Jahr") }
 
-private data class DailySummary(
-    val date: LocalDate,
-    val dayOverride: DayOverrideEntity?,
-    val entries: List<WorkTimeEntryEntity>,
-    val grossMinutes: Int,
-    val breakMinutes: Int,
-    val netMinutes: Int,
-    val targetMinutes: Int,
-    val balanceMinutes: Int
-)
-
-private data class PeriodSummary(
-    val dayCount: Int,
-    val regularWorkdayCount: Int,
-    val overrideCount: Int,
+private data class TimeSummary(
+    val blockCount: Int,
+    val workdayCount: Int,
     val grossMinutes: Int,
     val breakMinutes: Int,
     val netMinutes: Int,
@@ -97,7 +83,9 @@ private val entryDateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPatt
 class MainActivity : ComponentActivity() {
     private var pendingCsvExport: String? = null
 
-    private val createCsvDocumentLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+    private val createCsvDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
         val csvContent = pendingCsvExport
         pendingCsvExport = null
         if (uri != null && csvContent != null) {
@@ -125,7 +113,6 @@ class MainActivity : ComponentActivity() {
                 val entries by dao.observeEntries().collectAsState(initial = emptyList())
                 val activeState by dao.observeActiveState().collectAsState(initial = null)
                 val settings by dao.observeSettings().collectAsState(initial = null)
-                val dayOverrides by dao.observeDayOverrides().collectAsState(initial = emptyList())
                 var message by remember { mutableStateOf("Bereit") }
                 var selectedScreen by remember { mutableStateOf(AppScreen.Times) }
                 var radiusText by remember { mutableStateOf("120") }
@@ -166,19 +153,11 @@ class MainActivity : ComponentActivity() {
                     Text(message)
 
                     when (selectedScreen) {
-                        AppScreen.Times -> TimesScreen(
-                            modifier = Modifier.weight(1f),
-                            dao = dao,
-                            entries = entries,
-                            settings = effectiveSettings,
-                            dayOverrides = dayOverrides,
-                            onMessage = { message = it }
-                        )
+                        AppScreen.Times -> TimesScreen(Modifier.weight(1f), dao, entries, effectiveSettings.targetMinutesPerDay, onMessage = { message = it })
                         AppScreen.Settings -> SettingsScreen(
                             modifier = Modifier.weight(1f),
                             dao = dao,
                             currentSettings = effectiveSettings,
-                            dayOverrides = dayOverrides,
                             radiusText = radiusText,
                             onRadiusTextChange = { radiusText = it },
                             targetText = targetText,
@@ -205,13 +184,12 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun TimesScreen(modifier: Modifier, dao: WorkTimeDao, entries: List<WorkTimeEntryEntity>, settings: SettingsEntity, dayOverrides: List<DayOverrideEntity>, onMessage: (String) -> Unit) {
-        var selectedTimeView by remember { mutableStateOf(TimeView.Week) }
-        var selectedDay by remember { mutableStateOf<DailySummary?>(null) }
+    private fun TimesScreen(modifier: Modifier, dao: WorkTimeDao, entries: List<WorkTimeEntryEntity>, targetMinutesPerDay: Int, onMessage: (String) -> Unit) {
+        var selectedTimeView by remember { mutableStateOf(TimeView.Day) }
         var editEntry by remember { mutableStateOf<WorkTimeEntryEntity?>(null) }
         var confirmDeleteAll by remember { mutableStateOf(false) }
-        val dailySummaries = buildDailySummaries(entries, selectedTimeView, settings, dayOverrides)
-        val periodSummary = calculatePeriodSummary(dailySummaries)
+        val filteredEntries = filterEntriesByView(entries, selectedTimeView)
+        val summary = calculateSummary(filteredEntries, targetMinutesPerDay)
 
         LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
@@ -240,26 +218,23 @@ class MainActivity : ComponentActivity() {
             if (selectedTimeView != TimeView.Day) {
                 item {
                     Button(onClick = {
-                        exportCsv(selectedTimeView, dailySummaries)
+                        exportCsv(selectedTimeView, filteredEntries, targetMinutesPerDay)
                         onMessage("CSV Export vorbereitet")
                     }) { Text("Export ${selectedTimeView.label} CSV") }
                 }
             }
-            item { PeriodSummaryCard(selectedTimeView, periodSummary) }
-            item { Text("Tage ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge) }
-            items(dailySummaries) { dailySummary -> DailySummaryCard(dailySummary, onDetails = { selectedDay = dailySummary }) }
+            item { SummaryCard(selectedTimeView, summary) }
+            item { Text("Eintraege ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge) }
+            items(filteredEntries) { entry -> EntryCard(entry, targetMinutesPerDay, dao, onEdit = { editEntry = entry }, onMessage = onMessage) }
         }
 
-        selectedDay?.let { summary ->
-            DayDetailsDialog(summary, dao, onDismiss = { selectedDay = null }, onEdit = { entry -> editEntry = entry }, onMessage = onMessage)
-        }
-        editEntry?.let { entry -> EditEntryDialog(entry, dao, onDismiss = { editEntry = null }, onMessage = onMessage) }
+        editEntry?.let { entry -> EditEntryDialog(entry = entry, dao = dao, onDismiss = { editEntry = null }, onMessage = onMessage) }
 
         if (confirmDeleteAll) {
             AlertDialog(
                 onDismissRequest = { confirmDeleteAll = false },
                 title = { Text("Alle Eintraege loeschen?") },
-                text = { Text("Diese Aktion entfernt alle Arbeitszeit-Eintraege. Einstellungen und Sondertage bleiben erhalten.") },
+                text = { Text("Diese Aktion entfernt alle Arbeitszeit-Eintraege. Einstellungen bleiben erhalten.") },
                 confirmButton = {
                     TextButton(onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
@@ -275,62 +250,12 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun DailySummaryCard(summary: DailySummary, onDetails: () -> Unit) {
+    private fun EntryCard(entry: WorkTimeEntryEntity, targetMinutesPerDay: Int, dao: WorkTimeDao, onEdit: () -> Unit, onMessage: (String) -> Unit) {
+        val calculation = TimeCalculator.calculate(Instant.ofEpochMilli(entry.startEpochMillis), Instant.ofEpochMilli(entry.endEpochMillis), entry.breakMinutes, targetMinutesPerDay)
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}")
-                summary.dayOverride?.let { Text("Sondertag: ${it.type}${if (it.comment.isNotBlank()) " - ${it.comment}" else ""}") }
-                Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}")
-                Text("Soll: ${formatMinutes(summary.targetMinutes)} | Ueberstunden: ${formatSignedMinutes(summary.balanceMinutes)}")
-                Text("Bloecke: ${summary.entries.size}")
-                if (summary.entries.isNotEmpty()) Button(onClick = onDetails) { Text("Details") }
-            }
-        }
-    }
-
-    @Composable
-    private fun PeriodSummaryCard(view: TimeView, summary: PeriodSummary) {
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Zusammenfassung ${view.label}", style = MaterialTheme.typography.titleLarge)
-                Text("Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}")
-                Text("Brutto: ${formatMinutes(summary.grossMinutes)}")
-                Text("Pause: ${formatMinutes(summary.breakMinutes)}")
-                Text("Netto: ${formatMinutes(summary.netMinutes)}")
-                Text("Soll: ${formatMinutes(summary.targetMinutes)}")
-                Text("Saldo: ${formatSignedMinutes(summary.balanceMinutes)}")
-            }
-        }
-    }
-
-    @Composable
-    private fun DayDetailsDialog(summary: DailySummary, dao: WorkTimeDao, onDismiss: () -> Unit, onEdit: (WorkTimeEntryEntity) -> Unit, onMessage: (String) -> Unit) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Details ${summary.date}") },
-            text = {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        Text("Netto: ${formatMinutes(summary.netMinutes)} | Soll: ${formatMinutes(summary.targetMinutes)} | Saldo: ${formatSignedMinutes(summary.balanceMinutes)}")
-                    }
-                    items(summary.entries) { entry ->
-                        EntryCard(entry, dao, onEdit = { onEdit(entry) }, onMessage = onMessage)
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Schliessen") } }
-        )
-    }
-
-    @Composable
-    private fun EntryCard(entry: WorkTimeEntryEntity, dao: WorkTimeDao, onEdit: () -> Unit, onMessage: (String) -> Unit) {
-        val gross = ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)
-        val pause = entry.breakMinutes.coerceIn(0, gross)
-        val net = gross - pause
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${formatTime(entry.startEpochMillis)} - ${formatTime(entry.endEpochMillis)} | ${entry.source}")
-                Text("Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}")
+                Text("${entry.localDate} | ${entry.source}")
+                Text("Netto: ${calculation.netMinutes} min | Saldo Block: ${calculation.balanceMinutes} min | Pause: ${entry.breakMinutes} min")
                 if (entry.comment.isNotBlank()) Text(entry.comment)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onEdit) { Text("Bearbeiten") }
@@ -378,7 +303,16 @@ class MainActivity : ComponentActivity() {
                         end.isBefore(start) -> errorText = "Ende liegt vor Start"
                         breakMinutes == null -> errorText = "Pause ungueltig"
                         else -> CoroutineScope(Dispatchers.IO).launch {
-                            dao.updateEntry(entry.copy(localDate = start.atZone(zoneId).toLocalDate().toString(), startEpochMillis = start.toEpochMilli(), endEpochMillis = end.toEpochMilli(), breakMinutes = breakMinutes, comment = commentText, modifiedAtEpochMillis = Instant.now().toEpochMilli()))
+                            dao.updateEntry(
+                                entry.copy(
+                                    localDate = start.atZone(zoneId).toLocalDate().toString(),
+                                    startEpochMillis = start.toEpochMilli(),
+                                    endEpochMillis = end.toEpochMilli(),
+                                    breakMinutes = breakMinutes,
+                                    comment = commentText,
+                                    modifiedAtEpochMillis = Instant.now().toEpochMilli()
+                                )
+                            )
                             runOnUiThread { onMessage("Eintrag aktualisiert"); onDismiss() }
                         }
                     }
@@ -389,11 +323,26 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun SummaryCard(view: TimeView, summary: TimeSummary) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Zusammenfassung ${view.label}", style = MaterialTheme.typography.titleLarge)
+                Text("Bloecke: ${summary.blockCount}")
+                Text("Tage mit Eintraegen: ${summary.workdayCount}")
+                Text("Brutto: ${formatMinutes(summary.grossMinutes)}")
+                Text("Pause: ${formatMinutes(summary.breakMinutes)}")
+                Text("Netto: ${formatMinutes(summary.netMinutes)}")
+                Text("Soll: ${formatMinutes(summary.targetMinutes)}")
+                Text("Saldo: ${formatSignedMinutes(summary.balanceMinutes)}")
+            }
+        }
+    }
+
+    @Composable
     private fun SettingsScreen(
         modifier: Modifier,
         dao: WorkTimeDao,
         currentSettings: SettingsEntity,
-        dayOverrides: List<DayOverrideEntity>,
         radiusText: String,
         onRadiusTextChange: (String) -> Unit,
         targetText: String,
@@ -412,19 +361,29 @@ class MainActivity : ComponentActivity() {
         LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { GeofenceSettingsCard(dao, currentSettings, radiusText, onRadiusTextChange, geofenceRegistered, geofenceRegisteredAt, onGeofenceStatusChange, fusedLocationClient, geofenceManager, onMessage) }
             item { WorkSettingsCard(dao, currentSettings, targetText, onTargetTextChange, defaultBreakText, onDefaultBreakTextChange, dayCloseText, onDayCloseTextChange, onMessage) }
-            item { WorkdaySettingsCard(dao, currentSettings, onMessage) }
-            item { DayOverrideSettingsCard(dao, dayOverrides, onMessage) }
             item { AppResetCard(dao, onMessage) }
         }
     }
 
     @Composable
-    private fun GeofenceSettingsCard(dao: WorkTimeDao, settings: SettingsEntity, radiusText: String, onRadiusTextChange: (String) -> Unit, geofenceRegistered: Boolean, geofenceRegisteredAt: Long?, onGeofenceStatusChange: (Boolean, Long?) -> Unit, client: FusedLocationProviderClient, geofenceManager: GeofenceManager, onMessage: (String) -> Unit) {
+    private fun GeofenceSettingsCard(
+        dao: WorkTimeDao,
+        settings: SettingsEntity,
+        radiusText: String,
+        onRadiusTextChange: (String) -> Unit,
+        geofenceRegistered: Boolean,
+        geofenceRegisteredAt: Long?,
+        onGeofenceStatusChange: (Boolean, Long?) -> Unit,
+        client: FusedLocationProviderClient,
+        geofenceManager: GeofenceManager,
+        onMessage: (String) -> Unit
+    ) {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Arbeitsplatz-Geofence", style = MaterialTheme.typography.titleLarge)
                 Text(if (geofenceRegistered) "Geofence Status: Aktiv" else "Geofence Status: Nicht registriert")
                 geofenceRegisteredAt?.let { Text("Registriert am: ${formatEpoch(it, ZoneId.systemDefault())}") }
+                if (!geofenceRegistered) Text("Hinweis: Koordinate speichern und danach Geofence registrieren.")
                 GeofenceMapPreview(dao, settings, settings.geofenceRadiusMeters, onMessage)
                 OutlinedTextField(radiusText, { onRadiusTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Radius in Metern") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -436,7 +395,9 @@ class MainActivity : ComponentActivity() {
                     Button(onClick = {
                         val lat = settings.geofenceLatitude
                         val lon = settings.geofenceLongitude
-                        if (lat == null || lon == null) onMessage("Keine Arbeitsplatz-Koordinate gesetzt") else {
+                        if (lat == null || lon == null) {
+                            onMessage("Keine Arbeitsplatz-Koordinate gesetzt")
+                        } else {
                             try {
                                 geofenceManager.registerWorkplaceGeofence(lat, lon, settings.geofenceRadiusMeters)
                                 val now = Instant.now().toEpochMilli()
@@ -448,7 +409,11 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }) { Text("Geofence registrieren") }
-                    Button(onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
+                    Button(onClick = {
+                        geofenceManager.unregisterWorkplaceGeofence()
+                        onGeofenceStatusChange(false, null)
+                        onMessage("Geofence entfernt")
+                    }) { Text("Geofence entfernen") }
                 }
                 Text("© OpenStreetMap contributors")
             }
@@ -460,74 +425,11 @@ class MainActivity : ComponentActivity() {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Arbeitszeitparameter", style = MaterialTheme.typography.titleLarge)
-                OutlinedTextField(targetText, { onTargetTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Sollzeit pro Arbeitstag in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(targetText, { onTargetTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Sollzeit pro Tag in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(breakText, { onBreakTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Standardpause in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(dayCloseText, onDayCloseTextChange, label = { Text("Tagesabschluss HH:mm") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Button(onClick = { saveWorkSettings(dao, settings, targetText, breakText, dayCloseText, onMessage) }) { Text("Arbeitszeitparameter speichern") }
-            }
-        }
-    }
-
-    @Composable
-    private fun WorkdaySettingsCard(dao: WorkTimeDao, settings: SettingsEntity, onMessage: (String) -> Unit) {
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Regulaere Arbeitstage", style = MaterialTheme.typography.titleLarge)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    WorkdayButton("Mo", settings.workMonday) { updateWorkdays(dao, settings.copy(workMonday = !settings.workMonday), onMessage) }
-                    WorkdayButton("Di", settings.workTuesday) { updateWorkdays(dao, settings.copy(workTuesday = !settings.workTuesday), onMessage) }
-                    WorkdayButton("Mi", settings.workWednesday) { updateWorkdays(dao, settings.copy(workWednesday = !settings.workWednesday), onMessage) }
-                    WorkdayButton("Do", settings.workThursday) { updateWorkdays(dao, settings.copy(workThursday = !settings.workThursday), onMessage) }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    WorkdayButton("Fr", settings.workFriday) { updateWorkdays(dao, settings.copy(workFriday = !settings.workFriday), onMessage) }
-                    WorkdayButton("Sa", settings.workSaturday) { updateWorkdays(dao, settings.copy(workSaturday = !settings.workSaturday), onMessage) }
-                    WorkdayButton("So", settings.workSunday) { updateWorkdays(dao, settings.copy(workSunday = !settings.workSunday), onMessage) }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun WorkdayButton(label: String, enabled: Boolean, onClick: () -> Unit) {
-        Button(onClick = onClick) { Text(if (enabled) "[x] $label" else "[ ] $label") }
-    }
-
-    @Composable
-    private fun DayOverrideSettingsCard(dao: WorkTimeDao, dayOverrides: List<DayOverrideEntity>, onMessage: (String) -> Unit) {
-        var dateText by remember { mutableStateOf(LocalDate.now().toString()) }
-        var typeText by remember { mutableStateOf("Urlaub") }
-        var commentText by remember { mutableStateOf("") }
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Sondertage / Abwesenheiten", style = MaterialTheme.typography.titleLarge)
-                OutlinedTextField(dateText, { dateText = it }, label = { Text("Datum yyyy-MM-dd") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Urlaub", "Feiertag", "Krank", "Frei").forEach { type -> Button(onClick = { typeText = type }) { Text(type) } }
-                }
-                OutlinedTextField(typeText, { typeText = it }, label = { Text("Typ") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(commentText, { commentText = it }, label = { Text("Kommentar") }, modifier = Modifier.fillMaxWidth())
-                Button(onClick = {
-                    if (runCatching { LocalDate.parse(dateText) }.isFailure) {
-                        onMessage("Datum ungueltig")
-                    } else {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            dao.upsertDayOverride(DayOverrideEntity(dateText, typeText, commentText))
-                            runOnUiThread { onMessage("Sondertag gespeichert") }
-                        }
-                    }
-                }) { Text("Sondertag speichern") }
-                dayOverrides.take(10).forEach { dayOverride ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${dayOverride.localDate} | ${dayOverride.type}")
-                        Button(onClick = {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                dao.deleteDayOverride(dayOverride.localDate)
-                                runOnUiThread { onMessage("Sondertag geloescht") }
-                            }
-                        }) { Text("Loeschen") }
-                    }
-                }
+                Text("Schicht ueber Mitternacht: vorbereitet, aktuell deaktiviert")
             }
         }
     }
@@ -538,7 +440,7 @@ class MainActivity : ComponentActivity() {
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("App Reset", style = MaterialTheme.typography.titleLarge)
-                Text("Loescht alle Eintraege, Sondertage und setzt Einstellungen zurueck.")
+                Text("Loescht alle Eintraege, stoppt aktive Erfassung und setzt Einstellungen zurueck.")
                 Button(onClick = { confirmReset = true }) { Text("App Reset") }
             }
         }
@@ -546,12 +448,11 @@ class MainActivity : ComponentActivity() {
             AlertDialog(
                 onDismissRequest = { confirmReset = false },
                 title = { Text("App wirklich zuruecksetzen?") },
-                text = { Text("Alle Eintraege, Sondertage und Einstellungen werden geloescht bzw. auf Standardwerte gesetzt.") },
+                text = { Text("Alle Eintraege und Einstellungen werden geloescht bzw. auf Standardwerte gesetzt.") },
                 confirmButton = {
                     TextButton(onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.deleteAllEntries()
-                            dao.deleteAllDayOverrides()
                             dao.upsertActiveState(WorkSessionManager.initialState())
                             dao.upsertSettings(SettingsEntity())
                             writeGeofenceStatus(false, null)
@@ -564,31 +465,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun exportCsv(view: TimeView, dailySummaries: List<DailySummary>) {
+    private fun exportCsv(view: TimeView, entries: List<WorkTimeEntryEntity>, targetMinutesPerDay: Int) {
         if (view == TimeView.Day) return
-        val csv = buildDailyCsv(dailySummaries)
+        val csv = buildCsv(view, entries, targetMinutesPerDay)
         val fileName = "arbeitszeit_export_${view.label.lowercase()}_${LocalDate.now()}.csv"
         pendingCsvExport = csv
         createCsvDocumentLauncher.launch(fileName)
     }
 
-    private fun buildDailyCsv(dailySummaries: List<DailySummary>): String {
-        val header = listOf("Datum", "Wochentag", "StartErsterBlock", "EndeLetzterBlock", "BruttoMinuten", "PauseMinuten", "NettoMinuten", "SollMinuten", "SaldoMinuten", "AnzahlBloecke", "Sondertag", "Kommentar")
+    private fun buildCsv(view: TimeView, entries: List<WorkTimeEntryEntity>, targetMinutesPerDay: Int): String {
+        val zoneId = ZoneId.systemDefault()
+        val header = listOf("Ansicht", "Datum", "Wochentag", "Start", "Ende", "BruttoMinuten", "PauseMinuten", "NettoMinuten", "SollMinuten", "SaldoMinuten", "Quelle", "Kommentar")
         val lines = mutableListOf(header.joinToString(";") { csvQuote(it) })
-        dailySummaries.forEach { day ->
+        entries.sortedBy { it.startEpochMillis }.forEach { entry ->
+            val start = Instant.ofEpochMilli(entry.startEpochMillis).atZone(zoneId)
+            val end = Instant.ofEpochMilli(entry.endEpochMillis).atZone(zoneId)
+            val gross = ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)
+            val boundedBreak = entry.breakMinutes.coerceIn(0, gross)
+            val net = gross - boundedBreak
+            val saldo = net - targetMinutesPerDay
             val row = listOf(
-                day.date.toString(),
-                weekdayLabel(day.date.dayOfWeek),
-                day.entries.minByOrNull { it.startEpochMillis }?.let { formatEpoch(it.startEpochMillis, ZoneId.systemDefault()) } ?: "",
-                day.entries.maxByOrNull { it.endEpochMillis }?.let { formatEpoch(it.endEpochMillis, ZoneId.systemDefault()) } ?: "",
-                day.grossMinutes.toString(),
-                day.breakMinutes.toString(),
-                day.netMinutes.toString(),
-                day.targetMinutes.toString(),
-                day.balanceMinutes.toString(),
-                day.entries.size.toString(),
-                day.dayOverride?.type ?: "",
-                day.dayOverride?.comment ?: ""
+                view.label,
+                start.toLocalDate().toString(),
+                start.dayOfWeek.toString(),
+                start.toLocalDateTime().format(entryDateTimeFormatter),
+                end.toLocalDateTime().format(entryDateTimeFormatter),
+                gross.toString(),
+                boundedBreak.toString(),
+                net.toString(),
+                targetMinutesPerDay.toString(),
+                saldo.toString(),
+                entry.source,
+                entry.comment
             )
             lines.add(row.joinToString(";") { csvQuote(it) })
         }
@@ -596,6 +504,17 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun csvQuote(value: String): String = "\"" + value.replace("\"", "\"\"") + "\""
+
+    private fun readGeofenceRegistered(): Boolean = getSharedPreferences("geofence_state", MODE_PRIVATE).getBoolean("registered", false)
+    private fun readGeofenceRegisteredAt(): Long? = getSharedPreferences("geofence_state", MODE_PRIVATE).getLong("registeredAt", 0L).takeIf { it > 0L }
+
+    private fun writeGeofenceStatus(registered: Boolean, registeredAt: Long?) {
+        getSharedPreferences("geofence_state", MODE_PRIVATE)
+            .edit()
+            .putBoolean("registered", registered)
+            .putLong("registeredAt", registeredAt ?: 0L)
+            .apply()
+    }
 
     private fun saveWorkSettings(dao: WorkTimeDao, settings: SettingsEntity, targetText: String, breakText: String, dayCloseText: String, onMessage: (String) -> Unit) {
         val target = targetText.toIntOrNull()
@@ -610,13 +529,6 @@ class MainActivity : ComponentActivity() {
                 DayCloseWorker.scheduleNext(this@MainActivity)
                 runOnUiThread { onMessage("Arbeitszeitparameter gespeichert") }
             }
-        }
-    }
-
-    private fun updateWorkdays(dao: WorkTimeDao, settings: SettingsEntity, onMessage: (String) -> Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            dao.upsertSettings(settings)
-            runOnUiThread { onMessage("Arbeitstage gespeichert") }
         }
     }
 
@@ -666,84 +578,34 @@ class MainActivity : ComponentActivity() {
         }.addOnFailureListener { onMessage("Position konnte nicht gelesen werden: ${it.message}") }
     }
 
-    private fun buildDailySummaries(entries: List<WorkTimeEntryEntity>, view: TimeView, settings: SettingsEntity, dayOverrides: List<DayOverrideEntity>): List<DailySummary> {
-        val zoneId = ZoneId.systemDefault()
-        val overrideMap = dayOverrides.associateBy { it.localDate }
-        val today = LocalDate.now()
-        val periodDates = periodDates(today, view)
-        val groupedEntries = entries.groupBy { Instant.ofEpochMilli(it.startEpochMillis).atZone(zoneId).toLocalDate() }
-        val allDates = (periodDates + groupedEntries.keys).filter { isDateInView(it, today, view) }.distinct().sortedDescending()
-
-        return allDates.mapNotNull { date ->
-            val dayEntries = groupedEntries[date].orEmpty().sortedBy { it.startEpochMillis }
-            val override = overrideMap[date.toString()]
-            val target = targetForDate(settings, override, date)
-            val showDay = dayEntries.isNotEmpty() || target > 0 || override != null
-            if (!showDay) return@mapNotNull null
-            val gross = dayEntries.sumOf { ((it.endEpochMillis - it.startEpochMillis) / 60000L).toInt().coerceAtLeast(0) }
-            val pause = dayEntries.sumOf { entry -> entry.breakMinutes.coerceIn(0, ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)) }
-            val net = gross - pause
-            DailySummary(date, override, dayEntries, gross, pause, net, target, net - target)
-        }
-    }
-
-    private fun periodDates(referenceDate: LocalDate, view: TimeView): List<LocalDate> {
-        val weekFields = WeekFields.ISO
-        return when (view) {
-            TimeView.Day -> listOf(referenceDate)
-            TimeView.Week -> {
-                val start = referenceDate.with(weekFields.dayOfWeek(), 1)
-                (0..6).map { start.plusDays(it.toLong()) }
-            }
-            TimeView.Month -> (1..referenceDate.lengthOfMonth()).map { referenceDate.withDayOfMonth(it) }
-            TimeView.Year -> (1..referenceDate.lengthOfYear()).map { referenceDate.withDayOfYear(it) }
-        }
-    }
-
-    private fun isDateInView(date: LocalDate, referenceDate: LocalDate, view: TimeView): Boolean {
-        val weekFields = WeekFields.ISO
-        return when (view) {
-            TimeView.Day -> date == referenceDate
-            TimeView.Week -> date.get(weekFields.weekOfWeekBasedYear()) == referenceDate.get(weekFields.weekOfWeekBasedYear()) && date.get(weekFields.weekBasedYear()) == referenceDate.get(weekFields.weekBasedYear())
-            TimeView.Month -> date.year == referenceDate.year && date.month == referenceDate.month
-            TimeView.Year -> date.year == referenceDate.year
-        }
-    }
-
-    private fun targetForDate(settings: SettingsEntity, override: DayOverrideEntity?, date: LocalDate): Int {
-        if (override != null) return 0
-        return if (isRegularWorkday(settings, date.dayOfWeek)) settings.targetMinutesPerDay else 0
-    }
-
-    private fun isRegularWorkday(settings: SettingsEntity, dayOfWeek: DayOfWeek): Boolean = when (dayOfWeek) {
-        DayOfWeek.MONDAY -> settings.workMonday
-        DayOfWeek.TUESDAY -> settings.workTuesday
-        DayOfWeek.WEDNESDAY -> settings.workWednesday
-        DayOfWeek.THURSDAY -> settings.workThursday
-        DayOfWeek.FRIDAY -> settings.workFriday
-        DayOfWeek.SATURDAY -> settings.workSaturday
-        DayOfWeek.SUNDAY -> settings.workSunday
-    }
-
-    private fun calculatePeriodSummary(days: List<DailySummary>): PeriodSummary = PeriodSummary(
-        dayCount = days.size,
-        regularWorkdayCount = days.count { it.targetMinutes > 0 },
-        overrideCount = days.count { it.dayOverride != null },
-        grossMinutes = days.sumOf { it.grossMinutes },
-        breakMinutes = days.sumOf { it.breakMinutes },
-        netMinutes = days.sumOf { it.netMinutes },
-        targetMinutes = days.sumOf { it.targetMinutes },
-        balanceMinutes = days.sumOf { it.balanceMinutes }
-    )
-
-    private fun readGeofenceRegistered(): Boolean = getSharedPreferences("geofence_state", MODE_PRIVATE).getBoolean("registered", false)
-    private fun readGeofenceRegisteredAt(): Long? = getSharedPreferences("geofence_state", MODE_PRIVATE).getLong("registeredAt", 0L).takeIf { it > 0L }
-    private fun writeGeofenceStatus(registered: Boolean, registeredAt: Long?) { getSharedPreferences("geofence_state", MODE_PRIVATE).edit().putBoolean("registered", registered).putLong("registeredAt", registeredAt ?: 0L).apply() }
     private fun formatEpoch(epochMillis: Long, zoneId: ZoneId): String = Instant.ofEpochMilli(epochMillis).atZone(zoneId).toLocalDateTime().format(entryDateTimeFormatter)
-    private fun formatTime(epochMillis: Long): String = Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalTime().toString()
     private fun parseDateTime(value: String, zoneId: ZoneId): Instant? = runCatching { LocalDateTime.parse(value, entryDateTimeFormatter).atZone(zoneId).toInstant() }.getOrNull()
-    private fun weekdayLabel(dayOfWeek: DayOfWeek): String = when (dayOfWeek) { DayOfWeek.MONDAY -> "Mo"; DayOfWeek.TUESDAY -> "Di"; DayOfWeek.WEDNESDAY -> "Mi"; DayOfWeek.THURSDAY -> "Do"; DayOfWeek.FRIDAY -> "Fr"; DayOfWeek.SATURDAY -> "Sa"; DayOfWeek.SUNDAY -> "So" }
+
+    private fun filterEntriesByView(entries: List<WorkTimeEntryEntity>, view: TimeView): List<WorkTimeEntryEntity> {
+        val today = LocalDate.now()
+        val zoneId = ZoneId.systemDefault()
+        val wf = WeekFields.ISO
+        val cw = today.get(wf.weekOfWeekBasedYear())
+        val cy = today.get(wf.weekBasedYear())
+        return entries.filter { e ->
+            val d = Instant.ofEpochMilli(e.startEpochMillis).atZone(zoneId).toLocalDate()
+            when (view) { TimeView.Day -> d == today; TimeView.Week -> d.get(wf.weekOfWeekBasedYear()) == cw && d.get(wf.weekBasedYear()) == cy; TimeView.Month -> d.year == today.year && d.month == today.month; TimeView.Year -> d.year == today.year }
+        }
+    }
+
+    private fun calculateSummary(entries: List<WorkTimeEntryEntity>, targetMinutesPerDay: Int): TimeSummary {
+        val zoneId = ZoneId.systemDefault()
+        var gross = 0; var pause = 0; var net = 0
+        entries.forEach { e -> val g = ((e.endEpochMillis - e.startEpochMillis) / 60000L).toInt().coerceAtLeast(0); val p = e.breakMinutes.coerceIn(0, g); gross += g; pause += p; net += g - p }
+        val workdays = entries.map { Instant.ofEpochMilli(it.startEpochMillis).atZone(zoneId).toLocalDate() }.distinct().size
+        val target = targetMinutesPerDay * workdays
+        return TimeSummary(entries.size, workdays, gross, pause, net, target, net - target)
+    }
+
     private fun formatMinutes(minutes: Int): String = "${minutes / 60}h ${minutes % 60}m"
     private fun formatSignedMinutes(minutes: Int): String { val sign = if (minutes >= 0) "+" else "-"; val abs = kotlin.math.abs(minutes); return "${sign}${abs / 60}h ${abs % 60}m" }
-    private class LongPressOverlay(private val onLongPressGeoPoint: (GeoPoint) -> Unit) : Overlay() { override fun onLongPress(event: MotionEvent, mapView: MapView): Boolean { val point = mapView.projection.fromPixels(event.x.toInt(), event.y.toInt()) as GeoPoint; onLongPressGeoPoint(point); return true } }
+
+    private class LongPressOverlay(private val onLongPressGeoPoint: (GeoPoint) -> Unit) : Overlay() {
+        override fun onLongPress(event: MotionEvent, mapView: MapView): Boolean { val point = mapView.projection.fromPixels(event.x.toInt(), event.y.toInt()) as GeoPoint; onLongPressGeoPoint(point); return true }
+    }
 }

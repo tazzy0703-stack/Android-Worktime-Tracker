@@ -41,19 +41,4 @@ interface WorkTimeDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSettings(settings: SettingsEntity)
-
-    @Query("SELECT * FROM day_overrides ORDER BY localDate DESC")
-    fun observeDayOverrides(): Flow<List<DayOverrideEntity>>
-
-    @Query("SELECT * FROM day_overrides")
-    suspend fun getDayOverrides(): List<DayOverrideEntity>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertDayOverride(dayOverride: DayOverrideEntity)
-
-    @Query("DELETE FROM day_overrides WHERE localDate = :localDate")
-    suspend fun deleteDayOverride(localDate: String)
-
-    @Query("DELETE FROM day_overrides")
-    suspend fun deleteAllDayOverrides()
 }

@@ -13,8 +13,8 @@ android {
         applicationId = "de.kai.arbeitszeitgeofence"
         minSdk = 34
         targetSdk = 34
-        versionCode = 14
-        versionName = "0.8.1"
+        versionCode = 13
+        versionName = "0.8.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -50,8 +50,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    buildFeatures {
+        compose = true
+    }
 }
 
 dependencies {
