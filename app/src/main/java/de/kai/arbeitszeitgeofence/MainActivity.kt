@@ -694,7 +694,7 @@ class MainActivity : ComponentActivity() {
             val dayEntries = groupedEntries[date].orEmpty().sortedBy { it.startEpochMillis }
             val override = overrideMap[date.toString()]
             val target = targetForDate(settings.targetMinutesPerDay, workdaySettings, override, date)
-            val showDay = dayEntries.isNotEmpty() || target > 0 || override != null
+            val showDay = dayEntries.isNotEmpty() || override != null
             if (!showDay) return@mapNotNull null
             val gross = dayEntries.sumOf { ((it.endEpochMillis - it.startEpochMillis) / 60000L).toInt().coerceAtLeast(0) }
             val pause = dayEntries.sumOf { entry -> entry.breakMinutes.coerceIn(0, ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)) }

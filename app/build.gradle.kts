@@ -13,8 +13,8 @@ android {
         applicationId = "de.kai.arbeitszeitgeofence"
         minSdk = 34
         targetSdk = 34
-        versionCode = 14
-        versionName = "0.8.1a"
+        versionCode = 15
+        versionName = "0.9.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
