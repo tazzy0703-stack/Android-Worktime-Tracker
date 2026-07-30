@@ -1,17 +1,17 @@
-﻿package de.kai.arbeitszeitgeofence
+package de.kai.arbeitszeitgeofence
 
 import android.app.Application
 import androidx.room.Room
-import de.kai.arbeitszeitgeofence.data.AppDatabase
+import de.kai.arbeitszeitgeofence.data.WorkTimeDatabase
 
 class ArbeitszeitApp : Application() {
-    val database: AppDatabase by lazy {
+    val database: WorkTimeDatabase by lazy {
         Room.databaseBuilder(
             applicationContext,
-            AppDatabase::class.java,
+            WorkTimeDatabase::class.java,
             "arbeitszeit-geofence.db"
         )
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(WorkTimeDatabase.MIGRATION_1_2)
             .build()
     }
 }
