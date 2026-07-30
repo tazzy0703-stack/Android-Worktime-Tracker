@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -65,18 +64,6 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
-
-import androidx.compose.ui.graphics.Color
-
-private val MatrixBackground = Color(0xFF0B0F0C)
-private val MatrixSurface = Color(0xFF121A17)
-
-private val MatrixGreen = Color(0xFF00E676)
-private val MatrixGreenDark = Color(0xFF00C853)
-
-private val MatrixRed = Color(0xFFFF5252)
-private val MatrixBlue = Color(0xFF42A5F5)
-private val MatrixOrange = Color(0xFFFF9800)
 
 private enum class AppScreen { Times, Settings }
 private enum class TimeView(val label: String) { Day("Tag"), Week("Woche"), Month("Monat"), Year("Jahr") }
@@ -185,13 +172,7 @@ class MainActivity : ComponentActivity() {
                     Text("Pause: ${state.accumulatedBreakMinutes} min${if (state.isBreakRunning) " + laufend" else ""}")
                     Text(message)
 
-HeroStatusCard(
-    isTracking = state.isTracking,
-    pauseMinutes = state.accumulatedBreakMinutes,
-    insideGeofence = state.insideGeofence
-)
-
-when (selectedScreen) {
+                    when (selectedScreen) {
                         AppScreen.Times -> TimesScreen(
                             modifier = Modifier.weight(1f),
                             dao = dao,
@@ -239,37 +220,7 @@ when (selectedScreen) {
             }
         }
     }
-@Composable
-private fun HeroStatusCard(
-    isTracking: Boolean,
-    pauseMinutes: Int,
-    insideGeofence: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
 
-            Text(
-                if (isTracking)
-                    "🟢 ARBEITSZEIT AKTIV"
-                else
-                    "⚫ GESTOPPT"
-            )
-
-            Text("Pause: $pauseMinutes Minuten")
-
-            Text(
-                if (insideGeofence)
-                    "📍 Arbeitsplatz erkannt"
-                else
-                    "📍 Außerhalb Geofence"
-            )
-        }
-    }
-}
     @Composable
     private fun TimesScreen(
         modifier: Modifier,
