@@ -2,6 +2,7 @@ package de.kai.arbeitszeitgeofence.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
@@ -21,49 +22,7 @@ fun HeroStatusCard(
     pauseMinutes: Int,
     insideGeofence: Boolean
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
 
-            Text(
-                text =
-                if (isTracking)
-                    "🟢 ARBEITSZEIT AKTIV"
-                else
-                    "⚫ GESTOPPT",
-                style = MaterialTheme.typography.titleLarge,
-                color = MatrixGreen
-            )
-
-            Text(
-                text = "Pause: $pauseMinutes Minuten",
-                color = Color.White
-            )
-
-            Text(
-                text =
-                if (insideGeofence)
-                    "📍 Arbeitsplatz erkannt"
-                else
-                    "📍 Außerhalb Geofence",
-                color = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-fun GeofenceStatusCard(
-    radius: Int,
-    active: Boolean
-) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -76,19 +35,74 @@ fun GeofenceStatusCard(
         ) {
 
             Text(
-                "📍 Arbeitsplatz",
-                color = MatrixBlue
-            )
-
-            Text(
-                if (active)
-                    "Geofence aktiv"
+                if (isTracking)
+                    "🟢 ARBEITSZEIT AKTIV"
                 else
-                    "Geofence nicht aktiv"
+                    "⚫ GESTOPPT",
+                style = MaterialTheme.typography.titleLarge,
+                color = MatrixGreen
             )
 
             Text(
-                "Radius: ${radius} m"
+                "Pause: $pauseMinutes Minuten",
+                color = Color.White
+            )
+
+            Text(
+                if (insideGeofence)
+                    "📍 Arbeitsplatz erkannt"
+                else
+                    "📍 Außerhalb Geofence",
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+fun KpiGrid() {
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+
+        KpiCard("Heute", "07:42")
+        KpiCard("Woche", "38:21")
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+
+        KpiCard("Monat", "154:33")
+        KpiCard("Saldo", "+08:15", MatrixGreen)
+    }
+}
+
+@Composable
+private fun KpiCard(
+    title: String,
+    value: String,
+    color: Color = Color.White
+) {
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MatrixSurface
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+
+            Text(title)
+
+            Text(
+                value,
+                color = color
             )
         }
     }
@@ -125,7 +139,7 @@ fun MonthProgressCard() {
             )
 
             Text(
-                "${(progress * 100).toInt()} %"
+                "${(progress * 100).toInt()}%"
             )
         }
     }
