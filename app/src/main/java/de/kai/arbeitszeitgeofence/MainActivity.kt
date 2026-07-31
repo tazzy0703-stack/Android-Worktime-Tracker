@@ -10,6 +10,7 @@ import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -168,18 +169,18 @@ class MainActivity : ComponentActivity() {
                 val effectiveSettings = settings ?: SettingsEntity()
 
                 Column(
-                    modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp),
+                    modifier = Modifier.fillMaxSize().background(MatrixBackground).statusBarsPadding().navigationBarsPadding().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("Arbeitszeit Matrix", style = MaterialTheme.typography.headlineMedium, color = MatrixGreen
 					)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { selectedScreen = AppScreen.Times }) { Text("Zeiten") }
-                        Button(onClick = { selectedScreen = AppScreen.Settings }) { Text("Einstellungen") }
+                        Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { selectedScreen = AppScreen.Times }) { Text("Zeiten") }
+                        Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { selectedScreen = AppScreen.Settings }) { Text("Einstellungen") }
                     }
-                    Text("Status: ${if (state.isTracking) "Arbeitszeit laeuft" else "Gestoppt"} / Geofence: ${if (state.insideGeofence) "Innen" else "Aussen"}")
-                    Text("Pause: ${state.accumulatedBreakMinutes} min${if (state.isBreakRunning) " + laufend" else ""}")
-                    Text(message)
+                    Text("Status: ${if (state.isTracking) "Arbeitszeit laeuft" else "Gestoppt"} / Geofence: ${if (state.insideGeofence) "Innen" else "Aussen"}", color = ComposeColor.White)
+                    Text("Pause: ${state.accumulatedBreakMinutes} min${if (state.isBreakRunning) " + laufend" else ""}", color = ComposeColor.White)
+                    Text(message, color = ComposeColor.White)
 					HeroStatusCard(
 					isTracking = state.isTracking,
 					pauseMinutes = state.accumulatedBreakMinutes,
@@ -254,30 +255,30 @@ class MainActivity : ComponentActivity() {
         LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_START); onMessage("Manuell gestartet") }) { Text("Start") }
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_STOP); onMessage("Manuell gestoppt") }) { Text("Stop") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_START); onMessage("Manuell gestartet") }) { Text("Start") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_STOP); onMessage("Manuell gestoppt") }) { Text("Stop") }
                 }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_START); onMessage("Pause gestartet") }) { Text("Pause Start") }
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_STOP); onMessage("Pause gestoppt") }) { Text("Pause Stop") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_START); onMessage("Pause gestartet") }) { Text("Pause Start") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_STOP); onMessage("Pause gestoppt") }) { Text("Pause Stop") }
                 }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_DAY_CLOSE_MANUAL); DayCloseWorker.scheduleNext(this@MainActivity); onMessage("Tagesabschluss ausgefuehrt") }) { Text("Tagesabschluss") }
-                    Button(onClick = { confirmDeleteAll = true }) { Text("Alle Eintraege loeschen") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_DAY_CLOSE_MANUAL); DayCloseWorker.scheduleNext(this@MainActivity); onMessage("Tagesabschluss ausgefuehrt") }) { Text("Tagesabschluss") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { confirmDeleteAll = true }) { Text("Alle Eintraege loeschen") }
                 }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TimeView.entries.forEach { view -> Button(onClick = { selectedTimeView = view }) { Text(view.label) } }
+                    TimeView.entries.forEach { view -> Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { selectedTimeView = view }) { Text(view.label) } }
                 }
             }
             if (selectedTimeView != TimeView.Day) {
                 item {
-                    Button(onClick = { exportCsv(selectedTimeView, dailySummaries); onMessage("CSV Export vorbereitet") }) {
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { exportCsv(selectedTimeView, dailySummaries); onMessage("CSV Export vorbereitet") }) {
                         Text("Export ${selectedTimeView.label} CSV")
                     }
                 }
@@ -298,7 +299,7 @@ class MainActivity : ComponentActivity() {
                 title = { Text("Alle Eintraege loeschen?") },
                 text = { Text("Diese Aktion entfernt alle Arbeitszeit-Eintraege. Einstellungen und Sondertage bleiben erhalten.") },
                 confirmButton = {
-                    TextButton(onClick = {
+                    TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.deleteAllEntries()
                             dao.upsertActiveState(WorkSessionManager.initialState())
@@ -306,7 +307,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }) { Text("Loeschen") }
                 },
-                dismissButton = { TextButton(onClick = { confirmDeleteAll = false }) { Text("Abbrechen") } }
+                dismissButton = { TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { confirmDeleteAll = false }) { Text("Abbrechen") } }
             )
         }
     }
@@ -336,7 +337,7 @@ Text(
     }
 )
                 Text("Bloecke: ${summary.entries.size}", color = ComposeColor.White)
-                if (summary.entries.isNotEmpty()) Button(onClick = onDetails) { Text("Details") }
+                if (summary.entries.isNotEmpty()) Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = onDetails) { Text("Details") }
             }
         }
     }
@@ -379,7 +380,7 @@ Text(
                     items(summary.entries) { entry -> EntryCard(entry, dao, onEdit = { onEdit(entry) }, onMessage = onMessage) }
                 }
             },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Schliessen") } }
+            confirmButton = { TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = onDismiss) { Text("Schliessen") } }
         )
     }
 
@@ -399,8 +400,8 @@ Text(
                 Text("Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}")
                 if (entry.comment.isNotBlank()) Text(entry.comment)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onEdit) { Text("Bearbeiten") }
-                    Button(onClick = {
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = onEdit) { Text("Bearbeiten") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.deleteEntry(entry.id)
                             runOnUiThread { onMessage("Eintrag geloescht") }
@@ -434,7 +435,7 @@ Text(
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                     val start = parseDateTime(startText, zoneId)
                     val end = parseDateTime(endText, zoneId)
                     val breakMinutes = breakText.toIntOrNull()
@@ -450,7 +451,7 @@ Text(
                     }
                 }) { Text("Speichern") }
             },
-            dismissButton = { TextButton(onClick = onDismiss) { Text("Abbrechen") } }
+            dismissButton = { TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = onDismiss) { Text("Abbrechen") } }
         )
     }
 
@@ -505,12 +506,12 @@ Text(
                 GeofenceMapPreview(dao, settings, settings.geofenceRadiusMeters, onMessage)
                 OutlinedTextField(radiusText, { onRadiusTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Radius in Metern") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { saveRadius(dao, settings, radiusText, onMessage) }) { Text("Radius speichern") }
-                    Button(onClick = { saveCurrentLocationAsWorkplace(client, dao, settings, radiusText, onMessage) }) { Text("Aktuelle Position speichern") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { saveRadius(dao, settings, radiusText, onMessage) }) { Text("Radius speichern") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { saveCurrentLocationAsWorkplace(client, dao, settings, radiusText, onMessage) }) { Text("Aktuelle Position speichern") }
                 }
                 Text("Koordinate: ${settings.geofenceLatitude ?: "nicht gesetzt"}, ${settings.geofenceLongitude ?: "nicht gesetzt"}", color = ComposeColor.White)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                         val lat = settings.geofenceLatitude
                         val lon = settings.geofenceLongitude
                         if (lat == null || lon == null) onMessage("Keine Arbeitsplatz-Koordinate gesetzt") else {
@@ -525,7 +526,7 @@ Text(
                             }
                         }
                     }) { Text("Geofence registrieren") }
-                    Button(onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
+                    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
                 }
                 Text("Â© OpenStreetMap contributors")
             }
@@ -545,7 +546,7 @@ Text(
                 OutlinedTextField(targetText, { onTargetTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Sollzeit pro Arbeitstag in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(breakText, { onBreakTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Standardpause in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(dayCloseText, onDayCloseTextChange, label = { Text("Tagesabschluss HH:mm") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Button(onClick = { saveWorkSettings(dao, settings, targetText, breakText, dayCloseText, onMessage) }) { Text("Arbeitszeitparameter speichern") }
+                Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { saveWorkSettings(dao, settings, targetText, breakText, dayCloseText, onMessage) }) { Text("Arbeitszeitparameter speichern") }
             }
         }
     }
@@ -561,28 +562,28 @@ Text(
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Regulaere Arbeitstage", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    WorkdayButton("Mo", workdaySettings.monday) { onWorkdaySettingsChange(workdaySettings.copy(monday = !workdaySettings.monday)); onMessage("Arbeitstage gespeichert") }
-                    WorkdayButton("Di", workdaySettings.tuesday) { onWorkdaySettingsChange(workdaySettings.copy(tuesday = !workdaySettings.tuesday)); onMessage("Arbeitstage gespeichert") }
-                    WorkdayButton("Mi", workdaySettings.wednesday) { onWorkdaySettingsChange(workdaySettings.copy(wednesday = !workdaySettings.wednesday)); onMessage("Arbeitstage gespeichert") }
-                    WorkdayButton("Do", workdaySettings.thursday) { onWorkdaySettingsChange(workdaySettings.copy(thursday = !workdaySettings.thursday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"Mo", workdaySettings.monday) { onWorkdaySettingsChange(workdaySettings.copy(monday = !workdaySettings.monday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"Di", workdaySettings.tuesday) { onWorkdaySettingsChange(workdaySettings.copy(tuesday = !workdaySettings.tuesday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"Mi", workdaySettings.wednesday) { onWorkdaySettingsChange(workdaySettings.copy(wednesday = !workdaySettings.wednesday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"Do", workdaySettings.thursday) { onWorkdaySettingsChange(workdaySettings.copy(thursday = !workdaySettings.thursday)); onMessage("Arbeitstage gespeichert") }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    WorkdayButton("Fr", workdaySettings.friday) { onWorkdaySettingsChange(workdaySettings.copy(friday = !workdaySettings.friday)); onMessage("Arbeitstage gespeichert") }
-                    WorkdayButton("Sa", workdaySettings.saturday) { onWorkdaySettingsChange(workdaySettings.copy(saturday = !workdaySettings.saturday)); onMessage("Arbeitstage gespeichert") }
-                    WorkdayButton("So", workdaySettings.sunday) { onWorkdaySettingsChange(workdaySettings.copy(sunday = !workdaySettings.sunday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"Fr", workdaySettings.friday) { onWorkdaySettingsChange(workdaySettings.copy(friday = !workdaySettings.friday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"Sa", workdaySettings.saturday) { onWorkdaySettingsChange(workdaySettings.copy(saturday = !workdaySettings.saturday)); onMessage("Arbeitstage gespeichert") }
+                    WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),"So", workdaySettings.sunday) { onWorkdaySettingsChange(workdaySettings.copy(sunday = !workdaySettings.sunday)); onMessage("Arbeitstage gespeichert") }
                 }
             }
         }
     }
 
 @Composable
-private fun WorkdayButton(
+private fun WorkdayButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),
     label: String,
     enabled: Boolean,
     onClick: () -> Unit
 ) {
 
-    Button(
+    Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),
         onClick = onClick,
         colors = ButtonDefaults.buttonColors(
             containerColor =
@@ -612,11 +613,11 @@ private fun WorkdayButton(
                 Text("Sondertage / Abwesenheiten", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 OutlinedTextField(dateText, { dateText = it }, label = { Text("Datum yyyy-MM-dd") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Urlaub", "Feiertag", "Krank", "Frei").forEach { type -> Button(onClick = { typeText = type }) { Text(type) } }
+                    listOf("Urlaub", "Feiertag", "Krank", "Frei").forEach { type -> Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { typeText = type }) { Text(type) } }
                 }
                 OutlinedTextField(typeText, { typeText = it }, label = { Text("Typ") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(commentText, { commentText = it }, label = { Text("Kommentar") }, modifier = Modifier.fillMaxWidth())
-                Button(onClick = {
+                Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                     if (runCatching { LocalDate.parse(dateText) }.isFailure) {
                         onMessage("Datum ungueltig")
                     } else {
@@ -628,7 +629,7 @@ private fun WorkdayButton(
                 dayOverrides.take(10).forEach { dayOverride ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("${dayOverride.localDate} | ${dayOverride.type}")
-                        Button(onClick = {
+                        Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                             onDayOverridesChange(dayOverrides.filterNot { it.localDate == dayOverride.localDate })
                             onMessage("Sondertag geloescht")
                         }) { Text("Loeschen") }
@@ -650,7 +651,7 @@ private fun WorkdayButton(
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("App Reset", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.")
-                Button(onClick = { confirmReset = true }) { Text("App Reset") }
+                Button(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { confirmReset = true }) { Text("App Reset") }
             }
         }
         if (confirmReset) {
@@ -659,7 +660,7 @@ private fun WorkdayButton(
                 title = { Text("App wirklich zuruecksetzen?") },
                 text = { Text("Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.") },
                 confirmButton = {
-                    TextButton(onClick = {
+                    TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.deleteAllEntries()
                             dao.upsertActiveState(WorkSessionManager.initialState())
@@ -674,7 +675,7 @@ private fun WorkdayButton(
                         }
                     }) { Text("Reset") }
                 },
-                dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Abbrechen") } }
+                dismissButton = { TextButton(colors = ButtonDefaults.buttonColors(containerColor = MatrixGreen),onClick = { confirmReset = false }) { Text("Abbrechen") } }
             )
         }
     }
@@ -907,5 +908,6 @@ private fun WorkdayButton(
         }
     }
 }
+
 
 
