@@ -393,12 +393,7 @@ Text(
     colors = CardDefaults.cardColors(
         containerColor = MatrixSurface
     )
-)Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
-) {
+)  {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("${formatTime(entry.startEpochMillis)} - ${formatTime(entry.endEpochMillis)} | ${entry.source}")
                 Text("Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}")
