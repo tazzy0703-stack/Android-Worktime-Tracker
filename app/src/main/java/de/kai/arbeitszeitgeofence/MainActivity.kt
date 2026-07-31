@@ -1,5 +1,6 @@
 ﻿package de.kai.arbeitszeitgeofence
 
+import de.kai.arbeitszeitgeofence.ui.MatrixSurface
 import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
 import android.Manifest
 import android.annotation.SuppressLint
@@ -28,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -168,7 +171,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Arbeitszeit Geofence", style = MaterialTheme.typography.headlineMedium)
+                    Text("Arbeitszeit Matrix", style = MaterialTheme.typography.headlineMedium, color = MatrixGreen
+					)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { selectedScreen = AppScreen.Times }) { Text("Zeiten") }
                         Button(onClick = { selectedScreen = AppScreen.Settings }) { Text("Einstellungen") }
@@ -279,7 +283,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             item { PeriodSummaryCard(selectedTimeView, periodSummary) }
-            item { Text("Tage ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge) }
+            item { Text("Tage ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen) }
             items(dailySummaries) { dailySummary -> DailySummaryCard(dailySummary, onDetails = { selectedDay = dailySummary }) }
         }
 
@@ -309,7 +313,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun DailySummaryCard(summary: DailySummary, onDetails: () -> Unit) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}")
                 summary.dayOverride?.let { Text("Sondertag: ${it.type}${if (it.comment.isNotBlank()) " - ${it.comment}" else ""}") }
@@ -334,9 +343,14 @@ Text(
 
     @Composable
     private fun PeriodSummaryCard(view: TimeView, summary: PeriodSummary) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Zusammenfassung ${view.label}", style = MaterialTheme.typography.titleLarge)
+                Text("Zusammenfassung ${view.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Text("Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}")
                 Text("Brutto: ${formatMinutes(summary.grossMinutes)}")
                 Text("Pause: ${formatMinutes(summary.breakMinutes)}")
@@ -374,7 +388,17 @@ Text(
         val gross = ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)
         val pause = entry.breakMinutes.coerceIn(0, gross)
         val net = gross - pause
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+)Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("${formatTime(entry.startEpochMillis)} - ${formatTime(entry.endEpochMillis)} | ${entry.source}")
                 Text("Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}")
@@ -470,9 +494,17 @@ Text(
 
     @Composable
     private fun GeofenceSettingsCard(dao: WorkTimeDao, settings: SettingsEntity, radiusText: String, onRadiusTextChange: (String) -> Unit, geofenceRegistered: Boolean, geofenceRegisteredAt: Long?, onGeofenceStatusChange: (Boolean, Long?) -> Unit, client: FusedLocationProviderClient, geofenceManager: GeofenceManager, onMessage: (String) -> Unit) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Arbeitsplatz-Geofence", style = MaterialTheme.typography.titleLarge)
+               Text(
+    "Arbeitsplatz-Geofence",
+    style = MaterialTheme.typography.titleLarge, color = MatrixGreen
+)
                 Text(if (geofenceRegistered) "Geofence Status: Aktiv" else "Geofence Status: Nicht registriert")
                 geofenceRegisteredAt?.let { Text("Registriert am: ${formatEpoch(it, ZoneId.systemDefault())}") }
                 GeofenceMapPreview(dao, settings, settings.geofenceRadiusMeters, onMessage)
@@ -507,9 +539,14 @@ Text(
 
     @Composable
     private fun WorkSettingsCard(dao: WorkTimeDao, settings: SettingsEntity, targetText: String, onTargetTextChange: (String) -> Unit, breakText: String, onBreakTextChange: (String) -> Unit, dayCloseText: String, onDayCloseTextChange: (String) -> Unit, onMessage: (String) -> Unit) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Arbeitszeitparameter", style = MaterialTheme.typography.titleLarge)
+                Text("Arbeitszeitparameter", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 OutlinedTextField(targetText, { onTargetTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Sollzeit pro Arbeitstag in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(breakText, { onBreakTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Standardpause in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(dayCloseText, onDayCloseTextChange, label = { Text("Tagesabschluss HH:mm") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -520,9 +557,14 @@ Text(
 
     @Composable
     private fun WorkdaySettingsCard(workdaySettings: WorkdaySettings, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Regulaere Arbeitstage", style = MaterialTheme.typography.titleLarge)
+                Text("Regulaere Arbeitstage", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     WorkdayButton("Mo", workdaySettings.monday) { onWorkdaySettingsChange(workdaySettings.copy(monday = !workdaySettings.monday)); onMessage("Arbeitstage gespeichert") }
                     WorkdayButton("Di", workdaySettings.tuesday) { onWorkdaySettingsChange(workdaySettings.copy(tuesday = !workdaySettings.tuesday)); onMessage("Arbeitstage gespeichert") }
@@ -538,19 +580,41 @@ Text(
         }
     }
 
-    @Composable
-    private fun WorkdayButton(label: String, enabled: Boolean, onClick: () -> Unit) {
-        Button(onClick = onClick) { Text(if (enabled) "[x] $label" else "[ ] $label") }
+@Composable
+private fun WorkdayButton(
+    label: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor =
+                if (enabled)
+                    MatrixGreen
+                else
+                    MatrixRed
+        )
+    ) {
+
+        Text(label)
     }
+}
 
     @Composable
     private fun DayOverrideSettingsCard(dayOverrides: List<DayOverride>, onDayOverridesChange: (List<DayOverride>) -> Unit, onMessage: (String) -> Unit) {
         var dateText by remember { mutableStateOf(LocalDate.now().toString()) }
         var typeText by remember { mutableStateOf("Urlaub") }
         var commentText by remember { mutableStateOf("") }
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Sondertage / Abwesenheiten", style = MaterialTheme.typography.titleLarge)
+                Text("Sondertage / Abwesenheiten", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 OutlinedTextField(dateText, { dateText = it }, label = { Text("Datum yyyy-MM-dd") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf("Urlaub", "Feiertag", "Krank", "Frei").forEach { type -> Button(onClick = { typeText = type }) { Text(type) } }
@@ -582,9 +646,14 @@ Text(
     @Composable
     private fun AppResetCard(dao: WorkTimeDao, onDayOverridesChange: (List<DayOverride>) -> Unit, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
         var confirmReset by remember { mutableStateOf(false) }
-        Card(modifier = Modifier.fillMaxWidth()) {
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("App Reset", style = MaterialTheme.typography.titleLarge)
+                Text("App Reset", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.")
                 Button(onClick = { confirmReset = true }) { Text("App Reset") }
             }
@@ -669,7 +738,12 @@ Text(
         val lat = settings.geofenceLatitude
         val lon = settings.geofenceLongitude
         if (lat == null || lon == null) {
-            Card(modifier = Modifier.fillMaxWidth()) { Column(modifier = Modifier.padding(12.dp)) { Text("Noch keine Karte verfuegbar."); Text("Bitte zuerst aktuelle Position speichern oder per Karte setzen.") } }
+            Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
+) { Column(modifier = Modifier.padding(12.dp)) { Text("Noch keine Karte verfuegbar."); Text("Bitte zuerst aktuelle Position speichern oder per Karte setzen.") } }
             return
         }
         AndroidView(
