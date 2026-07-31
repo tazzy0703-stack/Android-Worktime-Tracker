@@ -4,15 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 
 @Composable
@@ -22,39 +18,25 @@ fun HeroStatusCard(
     insideGeofence: Boolean
 ) {
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
+    MatrixCard {
+
+        MatrixHeader(
+            if (isTracking)
+                "🟢 ARBEITSZEIT AKTIV"
+            else
+                "⚫ GESTOPPT"
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
 
-            Text(
-                if (isTracking)
-                    "🟢 ARBEITSZEIT AKTIV"
-                else
-                    "⚫ GESTOPPT",
-                style = MaterialTheme.typography.titleLarge,
-                color = MatrixGreen
-            )
+        MatrixText(
+            "Pause: $pauseMinutes Minuten"
+        )
 
-            Text(
-                "Pause: $pauseMinutes Minuten",
-                color = MatrixText
-            )
-
-            Text(
-                if (insideGeofence)
-                    "📍 Arbeitsplatz erkannt"
-                else
-                    "📍 Außerhalb Geofence",
-                color = MatrixText
-            )
-        }
+        MatrixText(
+            if (insideGeofence)
+                "📍 Arbeitsplatz erkannt"
+            else
+                "📍 Außerhalb Geofence"
+        )
     }
 }
 
@@ -63,20 +45,35 @@ fun KpiGrid() {
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
 
-        KpiCard("Heute", "07:42")
-        KpiCard("Woche", "38:21")
+        KpiCard(
+            title = "Heute",
+            value = "07:42"
+        )
+
+        KpiCard(
+            title = "Woche",
+            value = "38:21"
+        )
     }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.SpaceEvenly
     ) {
 
-        KpiCard("Monat", "154:33")
-        KpiCard("Saldo", "+08:15", MatrixGreen)
+        KpiCard(
+            title = "Monat",
+            value = "154:33"
+        )
+
+        KpiCard(
+            title = "Saldo",
+            value = "+08:15",
+            color = MatrixGreen
+        )
     }
 }
 
@@ -87,23 +84,15 @@ private fun KpiCard(
     color: androidx.compose.ui.graphics.Color = MatrixText
 ) {
 
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
+    MatrixCard {
+
+        MatrixHeader(title)
+
+        Text(
+            text = value,
+            color = color,
+            style = MaterialTheme.typography.titleLarge
         )
-    ) {
-
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Text(title,color = MatrixText)
-
-            Text(
-                value,
-                color = color
-            )
-        }
     }
 }
 
@@ -114,33 +103,19 @@ fun MonthProgressCard() {
 
     val progress =
         today.dayOfMonth.toFloat() /
-        today.lengthOfMonth().toFloat()
+                today.lengthOfMonth().toFloat()
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
+    MatrixCard {
+
+        MatrixHeader("📅 Monatsfortschritt")
+
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth()
         )
-    ) {
 
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-
-            Text(
-                "📅 Monatsfortschritt",
-                color = MatrixOrange
-            )
-
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Text(
-                "${(progress * 100).toInt()} %",
-                color = MatrixText
-            )
-        }
+        MatrixText(
+            "${(progress * 100).toInt()} %"
+        )
     }
 }
