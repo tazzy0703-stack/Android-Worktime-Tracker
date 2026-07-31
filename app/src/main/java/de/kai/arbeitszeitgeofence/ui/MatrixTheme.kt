@@ -14,4 +14,6 @@ val MatrixBlue = Color(0xFF42A5F5)
 
 val MatrixOrange = Color(0xFFFF9800)
 
+val MatrixText = Color(0xFFE8F5E9)
+
 val MatrixCardBorder = Color(0xFF1B5E20)

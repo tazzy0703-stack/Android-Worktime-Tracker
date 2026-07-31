@@ -12,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 
@@ -29,9 +28,9 @@ fun HeroStatusCard(
             containerColor = MatrixSurface
         )
     ) {
-
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
             Text(
@@ -45,7 +44,7 @@ fun HeroStatusCard(
 
             Text(
                 "Pause: $pauseMinutes Minuten",
-                color = Color.White
+                color = MatrixText
             )
 
             Text(
@@ -53,7 +52,7 @@ fun HeroStatusCard(
                     "📍 Arbeitsplatz erkannt"
                 else
                     "📍 Außerhalb Geofence",
-                color = Color.White
+                color = MatrixText
             )
         }
     }
@@ -85,7 +84,7 @@ fun KpiGrid() {
 private fun KpiCard(
     title: String,
     value: String,
-    color: Color = Color.White
+    color: androidx.compose.ui.graphics.Color = MatrixText
 ) {
 
     Card(
@@ -98,7 +97,7 @@ private fun KpiCard(
             modifier = Modifier.padding(16.dp)
         ) {
 
-            Text(title)
+            Text(title,color = MatrixText)
 
             Text(
                 value,
@@ -139,7 +138,8 @@ fun MonthProgressCard() {
             )
 
             Text(
-                "${(progress * 100).toInt()}%"
+                "${(progress * 100).toInt()} %",
+                color = MatrixText
             )
         }
     }

@@ -10,8 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.unit.dp
 
 @Composable
 fun SummaryCard(
@@ -37,23 +36,23 @@ fun SummaryCard(
 
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White
+                color = MatrixText
             )
 
             Text(
                 "Netto: $netTime",
-                color = Color.White
+                color = MatrixText
             )
 
             Text(
                 "Pause: $pauseTime",
-                color = Color.White
+                color = MatrixText
             )
 
             Text(
@@ -63,7 +62,7 @@ fun SummaryCard(
 
             Text(
                 "$bookings Buchungen",
-                color = Color.LightGray
+                color = MatrixOrange
             )
         }
     }
