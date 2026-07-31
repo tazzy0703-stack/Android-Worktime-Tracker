@@ -1,4 +1,4 @@
-﻿package de.kai.arbeitszeitgeofence
+package de.kai.arbeitszeitgeofence
 
 import de.kai.arbeitszeitgeofence.ui.MatrixSurface
 import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
@@ -320,9 +320,9 @@ class MainActivity : ComponentActivity() {
     )
 ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}", color = ComposeColor.White)
+                Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}")
                 summary.dayOverride?.let { Text("Sondertag: ${it.type}${if (it.comment.isNotBlank()) " - ${it.comment}" else ""}") }
-                Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}", color = ComposeColor.White)
+                Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}")
                 Text(
     "Soll: ${formatMinutes(summary.targetMinutes)}"
 )
@@ -335,7 +335,7 @@ Text(
         else -> ComposeColor.Gray
     }
 )
-                Text("Bloecke: ${summary.entries.size}", color = ComposeColor.White)
+                Text("Bloecke: ${summary.entries.size}")
                 if (summary.entries.isNotEmpty()) Button(onClick = onDetails) { Text("Details") }
             }
         }
@@ -352,10 +352,10 @@ Text(
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Zusammenfassung ${view.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Text("Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}")
-                Text("Brutto: ${formatMinutes(summary.grossMinutes)}", color = ComposeColor.White)
-                Text("Pause: ${formatMinutes(summary.breakMinutes)}", color = ComposeColor.White)
-                Text("Netto: ${formatMinutes(summary.netMinutes)}", color = ComposeColor.White)
-                Text("Soll: ${formatMinutes(summary.targetMinutes)}", color = ComposeColor.White)
+                Text("Brutto: ${formatMinutes(summary.grossMinutes)}")
+                Text("Pause: ${formatMinutes(summary.breakMinutes)}")
+                Text("Netto: ${formatMinutes(summary.netMinutes)}")
+                Text("Soll: ${formatMinutes(summary.targetMinutes)}")
                 Text(
     text = "Saldo: ${formatSignedMinutes(summary.balanceMinutes)}",
     color = when {
@@ -508,7 +508,7 @@ Text(
                     Button(onClick = { saveRadius(dao, settings, radiusText, onMessage) }) { Text("Radius speichern") }
                     Button(onClick = { saveCurrentLocationAsWorkplace(client, dao, settings, radiusText, onMessage) }) { Text("Aktuelle Position speichern") }
                 }
-                Text("Koordinate: ${settings.geofenceLatitude ?: "nicht gesetzt"}, ${settings.geofenceLongitude ?: "nicht gesetzt"}", color = ComposeColor.White)
+                Text("Koordinate: ${settings.geofenceLatitude ?: "nicht gesetzt"}, ${settings.geofenceLongitude ?: "nicht gesetzt"}")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         val lat = settings.geofenceLatitude
@@ -527,7 +527,7 @@ Text(
                     }) { Text("Geofence registrieren") }
                     Button(onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
                 }
-                Text("Â© OpenStreetMap contributors")
+                Text("© OpenStreetMap contributors")
             }
         }
     }
