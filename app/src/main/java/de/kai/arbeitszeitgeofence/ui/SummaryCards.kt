@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,41 +25,30 @@ fun SummaryCard(
         else
             MatrixGreen
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
-    ) {
+    MatrixCard {
 
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
 
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MatrixText
+            MatrixHeader(title)
+
+            MatrixText(
+                text = "Netto: $netTime"
+            )
+
+            MatrixText(
+                text = "Pause: $pauseTime"
             )
 
             Text(
-                "Netto: $netTime",
-                color = MatrixText
+                text = "Saldo: $balance",
+                color = balanceColor,
+                style = MaterialTheme.typography.titleMedium
             )
 
             Text(
-                "Pause: $pauseTime",
-                color = MatrixText
-            )
-
-            Text(
-                "Saldo: $balance",
-                color = balanceColor
-            )
-
-            Text(
-                "$bookings Buchungen",
+                text = "$bookings Buchungen",
                 color = MatrixOrange
             )
         }
