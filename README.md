@@ -118,7 +118,7 @@ Weitere Unterlagen befinden sich im Verzeichnis `docs`.
 
 ### Design
 
--   [Matrix_THEME.md[design/Matrix_THEME.md](design/Matrix_THEME.md)
+-   [design/MATRIX_THEME.md](design/MATRIX_THEME.md)
 
 ---
 
