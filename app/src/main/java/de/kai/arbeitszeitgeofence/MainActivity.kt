@@ -491,49 +491,174 @@ Text(
     }
 
     @Composable
-    private fun GeofenceSettingsCard(dao: WorkTimeDao, settings: SettingsEntity, radiusText: String, onRadiusTextChange: (String) -> Unit, geofenceRegistered: Boolean, geofenceRegisteredAt: Long?, onGeofenceStatusChange: (Boolean, Long?) -> Unit, client: FusedLocationProviderClient, geofenceManager: GeofenceManager, onMessage: (String) -> Unit) {
-        Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
+private fun GeofenceSettingsCard(
+    dao: WorkTimeDao,
+    settings: SettingsEntity,
+    radiusText: String,
+    onRadiusTextChange: (String) -> Unit,
+    geofenceRegistered: Boolean,
+    geofenceRegisteredAt: Long?,
+    onGeofenceStatusChange: (Boolean, Long?) -> Unit,
+    client: FusedLocationProviderClient,
+    geofenceManager: GeofenceManager,
+    onMessage: (String) -> Unit
 ) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-               Text(
-    "Arbeitsplatz-Geofence",
-    style = MaterialTheme.typography.titleLarge, color = MatrixGreen
-)
-                Text(if (geofenceRegistered) "Geofence Status: Aktiv" else "Geofence Status: Nicht registriert")
-                geofenceRegisteredAt?.let { Text("Registriert am: ${formatEpoch(it, ZoneId.systemDefault())}") }
-                GeofenceMapPreview(dao, settings, settings.geofenceRadiusMeters, onMessage)
-                OutlinedTextField(radiusText, { onRadiusTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Radius in Metern") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { saveRadius(dao, settings, radiusText, onMessage) }) { Text("Radius speichern") }
-                    Button(onClick = { saveCurrentLocationAsWorkplace(client, dao, settings, radiusText, onMessage) }) { Text("Aktuelle Position speichern") }
-                }
-                Text("Koordinate: ${settings.geofenceLatitude ?: "nicht gesetzt"}, ${settings.geofenceLongitude ?: "nicht gesetzt"}", color = ComposeColor.White)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
-                        val lat = settings.geofenceLatitude
-                        val lon = settings.geofenceLongitude
-                        if (lat == null || lon == null) onMessage("Keine Arbeitsplatz-Koordinate gesetzt") else {
-                            try {
-                                geofenceManager.registerWorkplaceGeofence(lat, lon, settings.geofenceRadiusMeters)
-                                val now = Instant.now().toEpochMilli()
-                                onGeofenceStatusChange(true, now)
-                                onMessage("Geofence erfolgreich registriert")
-                            } catch (ex: SecurityException) {
-                                onGeofenceStatusChange(false, null)
-                                onMessage("Standortberechtigung fehlt: ${ex.message}")
-                            }
-                        }
-                    }) { Text("Geofence registrieren") }
-                    Button(onClick = { geofenceManager.unregisterWorkplaceGeofence(); onGeofenceStatusChange(false, null); onMessage("Geofence entfernt") }) { Text("Geofence entfernen") }
-                }
-                Text("Â© OpenStreetMap contributors")
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MatrixSurface
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            Text(
+                "Arbeitsplatz-Geofence",
+                style = MaterialTheme.typography.titleLarge,
+                color = MatrixGreen
+            )
+
+            Text(
+                if (geofenceRegistered)
+                    "Geofence Status: Aktiv"
+                else
+                    "Geofence Status: Nicht registriert",
+                color = ComposeColor.White
+            )
+
+            geofenceRegisteredAt?.let {
+
+                Text(
+                    "Registriert am: ${
+                        formatEpoch(
+                            it,
+                            ZoneId.systemDefault()
+                        )
+                    }",
+                    color = ComposeColor.White
+                )
             }
+
+            GeofenceMapPreview(
+                dao,
+                settings,
+                settings.geofenceRadiusMeters,
+                onMessage
+            )
+
+            MatrixTextField(
+                value = radiusText,
+                label = "Radius in Metern",
+                onValueChange = {
+                    onRadiusTextChange(
+                        it.filter { char -> char.isDigit() }
+                            .take(4)
+                    )
+                }
+            )
+
+            MatrixButton(
+                text = "Radius speichern",
+                onClick = {
+                    saveRadius(
+                        dao,
+                        settings,
+                        radiusText,
+                        onMessage
+                    )
+                }
+            )
+
+            MatrixButton(
+                text = "Aktuelle Position speichern",
+                onClick = {
+                    saveCurrentLocationAsWorkplace(
+                        client,
+                        dao,
+                        settings,
+                        radiusText,
+                        onMessage
+                    )
+                }
+            )
+
+            Text(
+                "Koordinate: ${settings.geofenceLatitude ?: "nicht gesetzt"}, ${settings.geofenceLongitude ?: "nicht gesetzt"}",
+                color = ComposeColor.White
+            )
+
+            MatrixButton(
+                text = "Geofence registrieren",
+                onClick = {
+
+                    val lat = settings.geofenceLatitude
+                    val lon = settings.geofenceLongitude
+
+                    if (lat == null || lon == null) {
+
+                        onMessage(
+                            "Keine Arbeitsplatz-Koordinate gesetzt"
+                        )
+
+                    } else {
+
+                        try {
+
+                            geofenceManager.registerWorkplaceGeofence(
+                                lat,
+                                lon,
+                                settings.geofenceRadiusMeters
+                            )
+
+                            val now =
+                                Instant.now().toEpochMilli()
+
+                            onGeofenceStatusChange(
+                                true,
+                                now
+                            )
+
+                            onMessage(
+                                "Geofence erfolgreich registriert"
+                            )
+
+                        } catch (ex: SecurityException) {
+
+                            onGeofenceStatusChange(
+                                false,
+                                null
+                            )
+
+                            onMessage(
+                                "Standortberechtigung fehlt: ${ex.message}"
+                            )
+                        }
+                    }
+                }
+            )
+
+            MatrixButton(
+                text = "Geofence entfernen",
+                onClick = {
+                    geofenceManager.unregisterWorkplaceGeofence()
+
+                    onGeofenceStatusChange(
+                        false,
+                        null
+                    )
+
+                    onMessage(
+                        "Geofence entfernt"
+                    )
+                }
+            )
         }
     }
+}
 
     @Composable
     private fun WorkSettingsCard(dao: WorkTimeDao, settings: SettingsEntity, targetText: String, onTargetTextChange: (String) -> Unit, breakText: String, onBreakTextChange: (String) -> Unit, dayCloseText: String, onDayCloseTextChange: (String) -> Unit, onMessage: (String) -> Unit) {
@@ -548,10 +673,7 @@ Text(
                 MatrixTextField(value = targetText,label = "Sollzeit pro Arbeitstag in Minuten",onValueChange = {onTargetTextChange(it.filter { char -> char.isDigit() }.take(4) ) })
                 MatrixTextField(value = breakText,label = "Standardpause in Minuten",onValueChange = {onBreakTextChange(it.filter { char -> char.isDigit() }.take(4) ) })
                 MatrixTextField(value = dayCloseText,label = "Tagesabschluss HH:mm",onValueChange = onDayCloseTextChange)
-                Button(onClick = { saveWorkSettings(dao, settings, targetText, breakText, dayCloseText, onMessage) }) { Text("Arbeitszeitparameter speichern") }
-            }
-        }
-    }
+               MatrixButton(text = "Arbeitszeitparameter speichern",onClick = {saveWorkSettings(dao,settings,targetText,breakText,dayCloseText,onMessage)})}}}
 
     @Composable
     private fun WorkdaySettingsCard(workdaySettings: WorkdaySettings, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {

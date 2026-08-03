@@ -1,7 +1,6 @@
 package de.kai.arbeitszeitgeofence.ui
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -29,10 +28,15 @@ fun MatrixTextField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
-            focusedContainerColor = MatrixSurface,
-            unfocusedContainerColor = MatrixSurface,
+
+            focusedLabelColor = MatrixGreen,
+            unfocusedLabelColor = Color.White,
+
             focusedBorderColor = MatrixGreen,
-            unfocusedBorderColor = MatrixGreen
+            unfocusedBorderColor = MatrixGreen,
+
+            focusedContainerColor = MatrixSurface,
+            unfocusedContainerColor = MatrixSurface
         )
     )
 }
