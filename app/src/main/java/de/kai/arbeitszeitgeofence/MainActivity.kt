@@ -255,36 +255,120 @@ class MainActivity : ComponentActivity() {
         val periodSummary = calculatePeriodSummary(dailySummaries)
 
         LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_START); onMessage("Manuell gestartet") }) { Text("Start") }
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_STOP); onMessage("Manuell gestoppt") }) { Text("Stop") }
-                }
+item {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+        MatrixButton(
+            text = "Start",
+            onClick = {
+                TrackingForegroundService.start(
+                    this@MainActivity,
+                    TrackingForegroundService.ACTION_START
+                )
+                onMessage("Manuell gestartet")
             }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_START); onMessage("Pause gestartet") }) { Text("Pause Start") }
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_STOP); onMessage("Pause gestoppt") }) { Text("Pause Stop") }
-                }
+        )
+
+        MatrixButton(
+            text = "Stop",
+            onClick = {
+                TrackingForegroundService.start(
+                    this@MainActivity,
+                    TrackingForegroundService.ACTION_STOP
+                )
+                onMessage("Manuell gestoppt")
             }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_DAY_CLOSE_MANUAL); DayCloseWorker.scheduleNext(this@MainActivity); onMessage("Tagesabschluss ausgefuehrt") }) { Text("Tagesabschluss") }
-                    Button(onClick = { confirmDeleteAll = true }) { Text("Alle Eintraege loeschen") }
-                }
+        )
+    }
+}
+item {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+        MatrixButton(
+            text = "Pause Start",
+            onClick = {
+                TrackingForegroundService.start(
+                    this@MainActivity,
+                    TrackingForegroundService.ACTION_PAUSE_START
+                )
+                onMessage("Pause gestartet")
             }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TimeView.entries.forEach { view -> Button(onClick = { selectedTimeView = view }) { Text(view.label) } }
-                }
+        )
+
+        MatrixButton(
+            text = "Pause Stop",
+            onClick = {
+                TrackingForegroundService.start(
+                    this@MainActivity,
+                    TrackingForegroundService.ACTION_PAUSE_STOP
+                )
+                onMessage("Pause gestoppt")
             }
+        )
+    }
+}
+
+            item {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+        MatrixButton(
+            text = "Tagesabschluss",
+            onClick = {
+                TrackingForegroundService.start(
+                    this@MainActivity,
+                    TrackingForegroundService.ACTION_DAY_CLOSE_MANUAL
+                )
+
+                DayCloseWorker.scheduleNext(
+                    this@MainActivity
+                )
+
+                onMessage(
+                    "Tagesabschluss ausgefuehrt"
+                )
+            }
+        )
+
+        MatrixButton(
+            text = "Alle Eintraege loeschen",
+            onClick = {
+                confirmDeleteAll = true
+            }
+        )
+    }
+}
+            item {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+        TimeView.entries.forEach { view ->
+
+            MatrixButton(
+                text = view.label,
+                onClick = {
+                    selectedTimeView = view
+                }
+            )
+        }
+    }
+}
             if (selectedTimeView != TimeView.Day) {
-                item {
-                    Button(onClick = { exportCsv(selectedTimeView, dailySummaries); onMessage("CSV Export vorbereitet") }) {
-                        Text("Export ${selectedTimeView.label} CSV")
-                    }
-                }
+    item {
+
+        MatrixButton(
+            text = "Export ${selectedTimeView.label} CSV",
+            onClick = {
+                exportCsv(
+                    selectedTimeView,
+                    dailySummaries
+                )
+
+                onMessage(
+                    "CSV Export vorbereitet"
+                )
             }
+        )
+    }
+}
             item { PeriodSummaryCard(selectedTimeView, periodSummary) }
             item { Text("Tage ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen) }
             items(dailySummaries) { dailySummary -> DailySummaryCard(dailySummary, onDetails = { selectedDay = dailySummary }) }
