@@ -661,20 +661,78 @@ private fun GeofenceSettingsCard(
 }
 
     @Composable
-    private fun WorkSettingsCard(dao: WorkTimeDao, settings: SettingsEntity, targetText: String, onTargetTextChange: (String) -> Unit, breakText: String, onBreakTextChange: (String) -> Unit, dayCloseText: String, onDayCloseTextChange: (String) -> Unit, onMessage: (String) -> Unit) {
-        Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
+private fun WorkSettingsCard(
+    dao: WorkTimeDao,
+    settings: SettingsEntity,
+    targetText: String,
+    onTargetTextChange: (String) -> Unit,
+    breakText: String,
+    onBreakTextChange: (String) -> Unit,
+    dayCloseText: String,
+    onDayCloseTextChange: (String) -> Unit,
+    onMessage: (String) -> Unit
 ) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Arbeitszeitparameter", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
-                MatrixTextField(value = targetText,label = "Sollzeit pro Arbeitstag in Minuten",onValueChange = {onTargetTextChange(it.filter { char -> char.isDigit() }.take(4) ) })
-                MatrixTextField(value = breakText,label = "Standardpause in Minuten",onValueChange = {onBreakTextChange(it.filter { char -> char.isDigit() }.take(4) ) })
-                MatrixTextField(value = dayCloseText,label = "Tagesabschluss HH:mm",onValueChange = onDayCloseTextChange)
-               MatrixButton(text = "Arbeitszeitparameter speichern",onClick = {saveWorkSettings(dao,settings,targetText,breakText,dayCloseText,onMessage)})}}}
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MatrixSurface
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
 
+            Text(
+                "Arbeitszeitparameter",
+                style = MaterialTheme.typography.titleLarge,
+                color = MatrixGreen
+            )
+
+            MatrixTextField(
+                value = targetText,
+                label = "Sollzeit pro Arbeitstag in Minuten",
+                onValueChange = {
+                    onTargetTextChange(
+                        it.filter { char -> char.isDigit() }
+                            .take(4)
+                    )
+                }
+            )
+
+            MatrixTextField(
+                value = breakText,
+                label = "Standardpause in Minuten",
+                onValueChange = {
+                    onBreakTextChange(
+                        it.filter { char -> char.isDigit() }
+                            .take(4)
+                    )
+                }
+            )
+
+            MatrixTextField(
+                value = dayCloseText,
+                label = "Tagesabschluss HH:mm",
+                onValueChange = onDayCloseTextChange
+            )
+
+            MatrixButton(
+                text = "Arbeitszeitparameter speichern",
+                onClick = {
+                    saveWorkSettings(
+                        dao,
+                        settings,
+                        targetText,
+                        breakText,
+                        dayCloseText,
+                        onMessage
+                    )
+                }
+            )
+        }
+    }
+}
     @Composable
     private fun WorkdaySettingsCard(workdaySettings: WorkdaySettings, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
         Card(
