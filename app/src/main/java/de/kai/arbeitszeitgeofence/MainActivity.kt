@@ -922,125 +922,94 @@ private fun DayOverrideSettingsCard(
     }
 }
     @Composable
-private fun AppResetCard(
-    dao: WorkTimeDao,
-    onDayOverridesChange: (List<DayOverride>) -> Unit,
-    onWorkdaySettingsChange: (WorkdaySettings) -> Unit,
-    onMessage: (String) -> Unit
+    private fun AppResetCard(dao: WorkTimeDao, onDayOverridesChange: (List<DayOverride>) -> Unit, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
+        var confirmReset by remember { mutableStateOf(false) }
+        Card(
+    modifier = Modifier.fillMaxWidth(),
+    colors = CardDefaults.cardColors(
+        containerColor = MatrixSurface
+    )
 ) {
-
-    var confirmReset by remember {
-        mutableStateOf(false)
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
-    ) {
-
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            Text(
-                text = "App Reset",
-                style = MaterialTheme.typography.titleLarge,
-                color = MatrixGreen
-            )
-
-            Text(
-                text = "Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.",
-                color = ComposeColor.White
-            )
-
-            MatrixButton(
-                text = "App Reset",
-                onClick = {
-                    confirmReset = true
-                }
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("App Reset", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
+                Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.")
+                Button(onClick = { confirmReset = true }) { Text("App Reset") }
+            }
+        }
+        if (confirmReset) {
+            AlertDialog(
+                onDismissRequest = { confirmReset = false },
+                title = { Text("App wirklich zuruecksetzen?") },
+                text = { Text("Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            dao.deleteAllEntries()
+                            dao.upsertActiveState(WorkSessionManager.initialState())
+                            dao.upsertSettings(SettingsEntity())
+                            clearLocalPlanningSettings()
+                            runOnUiThread {
+                                onDayOverridesChange(emptyList())
+                                onWorkdaySettingsChange(WorkdaySettings())
+                                onMessage("App Reset abgeschlossen")
+                                confirmReset = false
+                            }
+                        }
+                    }) { Text("Reset") }
+                },
+                dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Abbrechen") } }
             )
         }
     }
 
-    if (confirmReset) {
-
-        AlertDialog(
-            onDismissRequest = {
-                confirmReset = false
-            },
-
-            title = {
-                Text(
-                    text = "App wirklich zuruecksetzen?",
-                    color = MatrixGreen
-                )
-            },
-
-            text = {
-                Text(
-                    text = "Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.",
-                    color = ComposeColor.White
-                )
-            },
-
-            confirmButton = {
-
-                MatrixButton(
-                    text = "Reset",
-                    onClick = {
-
-                        CoroutineScope(
-                            Dispatchers.IO
-                        ).launch {
-
-                            dao.deleteAllEntries()
-
-                            dao.upsertActiveState(
-                                WorkSessionManager.initialState()
-                            )
-
-                            dao.upsertSettings(
-                                SettingsEntity()
-                            )
-
-                            clearLocalPlanningSettings()
-
-                            runOnUiThread {
-
-                                onDayOverridesChange(
-                                    emptyList()
-                                )
-
-                                onWorkdaySettingsChange(
-                                    WorkdaySettings()
-                                )
-
-                                onMessage(
-                                    "App Reset abgeschlossen"
-                                )
-
-                                confirmReset = false
-                            }
-                        }
-                    }
-                )
-            },
-
-            dismissButton = {
-
-                MatrixButton(
-                    text = "Abbrechen",
-                    onClick = {
-                        confirmReset = false
-                    }
-                )
-            }
-        )
+    private fun exportCsv(view: TimeView, dailySummaries: List<DailySummary>) {
+        if (view == TimeView.Day) return
+        val csv = buildDailyCsv(dailySummaries)
+        val fileName = "arbeitszeit_export_${view.label.lowercase()}_${LocalDate.now()}.csv"
+        pendingCsvExport = csv
+        createCsvDocumentLauncher.launch(fileName)
     }
-}
+
+    private fun buildDailyCsv(dailySummaries: List<DailySummary>): String {
+        val header = listOf("Datum", "Wochentag", "StartErsterBlock", "EndeLetzterBlock", "BruttoMinuten", "PauseMinuten", "NettoMinuten", "SollMinuten", "SaldoMinuten", "AnzahlBloecke", "Sondertag", "Kommentar")
+        val lines = mutableListOf(header.joinToString(";") { csvQuote(it) })
+        dailySummaries.forEach { day ->
+            val row = listOf(
+                day.date.toString(),
+                weekdayLabel(day.date.dayOfWeek),
+                day.entries.minByOrNull { it.startEpochMillis }?.let { formatEpoch(it.startEpochMillis, ZoneId.systemDefault()) } ?: "",
+                day.entries.maxByOrNull { it.endEpochMillis }?.let { formatEpoch(it.endEpochMillis, ZoneId.systemDefault()) } ?: "",
+                day.grossMinutes.toString(),
+                day.breakMinutes.toString(),
+                day.netMinutes.toString(),
+                day.targetMinutes.toString(),
+                day.balanceMinutes.toString(),
+                day.entries.size.toString(),
+                day.dayOverride?.type ?: "",
+                day.dayOverride?.comment ?: ""
+            )
+            lines.add(row.joinToString(";") { csvQuote(it) })
+        }
+        return "\uFEFF" + lines.joinToString("\n")
+    }
+
+    private fun csvQuote(value: String): String = "\"" + value.replace("\"", "\"\"") + "\""
+
+    private fun saveWorkSettings(dao: WorkTimeDao, settings: SettingsEntity, targetText: String, breakText: String, dayCloseText: String, onMessage: (String) -> Unit) {
+        val target = targetText.toIntOrNull()
+        val pause = breakText.toIntOrNull()
+        val closeIsValid = runCatching { java.time.LocalTime.parse(dayCloseText) }.isSuccess
+        when {
+            target == null || target !in 0..1440 -> onMessage("Sollzeit muss zwischen 0 und 1440 Minuten liegen")
+            pause == null || pause !in 0..1440 -> onMessage("Pause muss zwischen 0 und 1440 Minuten liegen")
+            !closeIsValid -> onMessage("Tagesabschluss muss im Format HH:mm sein")
+            else -> CoroutineScope(Dispatchers.IO).launch {
+                dao.upsertSettings(settings.copy(targetMinutesPerDay = target, defaultBreakMinutes = pause, autoDayCloseTime = dayCloseText))
+                DayCloseWorker.scheduleNext(this@MainActivity)
+                runOnUiThread { onMessage("Arbeitszeitparameter gespeichert") }
+            }
+        }
+    }
 
     @Composable
     private fun GeofenceMapPreview(dao: WorkTimeDao, settings: SettingsEntity, radiusMeters: Float, onMessage: (String) -> Unit) {
