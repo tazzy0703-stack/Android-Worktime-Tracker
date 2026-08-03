@@ -16,38 +16,38 @@ Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im def
 
 ### Arbeitszeiterfassung
 
-- Automatischer Start per Geofence ENTER
-- Automatischer Stop per Geofence EXIT
-- Manuelles Starten und Stoppen
-- Manuelle Pausenverwaltung
-- Permanente Android-Benachrichtigung während aktiver Zeiterfassung
-- Tagesabschluss manuell oder automatisch
+-   Automatischer Start per Geofence ENTER
+-   Automatischer Stop per Geofence EXIT
+-   Manuelles Starten und Stoppen
+-   Manuelle Pausenverwaltung
+-   Permanente Android-Benachrichtigung während aktiver Zeiterfassung
+-   Tagesabschluss manuell oder automatisch
 
 ### Auswertung
 
-- Tagesansicht
-- Wochenansicht
-- Monatsansicht
-- Jahresansicht
-- Arbeitszeit-Salden
-- Detailansicht einzelner Arbeitstage
-- Bearbeitung bestehender Einträge
-- Löschen einzelner Einträge
-- CSV-Export von Auswertungen
+-   Tagesansicht
+-   Wochenansicht
+-   Monatsansicht
+-   Jahresansicht
+-   Arbeitszeit-Salden
+-   Detailansicht einzelner Arbeitstage
+-   Bearbeitung bestehender Einträge
+-   Löschen einzelner Einträge
+-   CSV-Export von Auswertungen
 
 ### Planung
 
-- Konfigurierbare Soll-Arbeitszeit
-- Standard-Pausenzeit
-- Individuelle Arbeitstage
-- Sondertage (Urlaub, Feiertag, Krank, Frei)
+-   Konfigurierbare Soll-Arbeitszeit
+-   Standard-Pausenzeit
+-   Individuelle Arbeitstage
+-   Sondertage (Urlaub, Feiertag, Krank, Frei)
 
 ### Standort
 
-- Arbeitsplatzverwaltung über OpenStreetMap
-- Kartenansicht mit osmdroid
-- Konfigurierbarer Geofence-Radius
-- Registrierung und Entfernung von Geofences
+-   Arbeitsplatzverwaltung über OpenStreetMap
+-   Kartenansicht mit osmdroid
+-   Konfigurierbarer Geofence-Radius
+-   Registrierung und Entfernung von Geofences
 
 ---
 
@@ -55,15 +55,15 @@ Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im def
 
 ### Dashboard
 
-docs/images/dashboard.png
+/../docs/images/dashboard.png
 
 ### Zeiterfassung
 
-![](docs/es/times.png
+/../docs/images/times.png
 
 ### Einstellungen
 
-docs/images/settings.png
+/../docs/images/settings.png
 
 ---
 
@@ -93,12 +93,12 @@ GitHub
 
 ## Technische Basis
 
-- Kotlin
-- Jetpack Compose
-- Room Database
-- Google Geofencing API
-- Android Foreground Services
-- OpenStreetMap / osmdroid
+-   Kotlin
+-   Jetpack Compose
+-   Room Database
+-   Google Geofencing API
+-   Android Foreground Services
+-   OpenStreetMap / osmdroid
 
 ---
 
@@ -108,17 +108,17 @@ Weitere Unterlagen befinden sich im Verzeichnis `docs`.
 
 ### Projektunterlagen
 
-- docs/CHANGELOG.md
-- [InstallationTION.md
-- [BerechtMISSIONS.md
-- [Datenschutz-HinES.md
-- [Release-ProzessCESS.md
-- docs/ROADMAP.md
-- [TestplanPLAN.md
+-   docs/CHANGELOG.md [docs/CHANGELOG.md](docs/CHANGELOG.md)
+-   [docs/INSTALLATION.md](docs/INSTALLATION.md)
+-   [docs/PERMISSIONS.md](docs/PERMISSIONS.md)
+-   [docs/PRIVACY_NOTES.md](docs/PRIVACY_NOTES.md)
+-   [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
+-   [docs/ROADMAP.md](docs/ROADMAP.md)
+-   [docs/TESTPLAN.md](docs/TESTPLAN.md)
 
 ### Design
 
-- [Matrix Theme_THEME.md
+-   \[Matrix Theme\_THEME.md
 
 ---
 
@@ -126,11 +126,11 @@ Weitere Unterlagen befinden sich im Verzeichnis `docs`.
 
 Die Anwendung arbeitet vollständig lokal auf dem Gerät.
 
-- Keine Cloud-Anbindung
-- Keine Benutzerkonten
-- Keine Telemetrie
-- Keine Datenübertragung an externe Dienste
-- Arbeitszeitdaten verbleiben auf dem Gerät
+-   Keine Cloud-Anbindung
+-   Keine Benutzerkonten
+-   Keine Telemetrie
+-   Keine Datenübertragung an externe Dienste
+-   Arbeitszeitdaten verbleiben auf dem Gerät
 
 Weitere Informationen sind in den Datenschutz-Hinweisen dokumentiert.
 
@@ -142,13 +142,13 @@ Version 1.0 stellt einen funktionsfähigen und stabilen Stand für die private N
 
 Enthalten sind:
 
-- Geofence-basierte Arbeitszeiterfassung
-- Dashboard
-- Arbeitszeitauswertung
-- CSV-Export
-- Sondertage
-- Kartenintegration
-- Matrix-UI
+-   Geofence-basierte Arbeitszeiterfassung
+-   Dashboard
+-   Arbeitszeitauswertung
+-   CSV-Export
+-   Sondertage
+-   Kartenintegration
+-   Matrix-UI
 
 ---
 
