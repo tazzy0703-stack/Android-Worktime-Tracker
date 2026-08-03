@@ -1,5 +1,7 @@
 ﻿package de.kai.arbeitszeitgeofence
 
+import de.kai.arbeitszeitgeofence.ui.MatrixTextField
+import de.kai.arbeitszeitgeofence.ui.MatrixBackground
 import de.kai.arbeitszeitgeofence.ui.MatrixSurface
 import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
 import android.Manifest
@@ -11,6 +13,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -168,15 +171,14 @@ class MainActivity : ComponentActivity() {
                 val effectiveSettings = settings ?: SettingsEntity()
 
                 Column(
-                    modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp),
+                    modifier = Modifier.fillMaxSize().background(MatrixBackground).statusBarsPadding().navigationBarsPadding().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("Arbeitszeit Matrix", style = MaterialTheme.typography.headlineMedium, color = MatrixGreen
 					)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { selectedScreen = AppScreen.Times }) { Text("Zeiten") }
-                        Button(onClick = { selectedScreen = AppScreen.Settings }) { Text("Einstellungen") }
-                    }
+                        MatrixButton(text = "Zeiten",onClick = {selectedScreen = AppScreen.Times})
+                        MatrixButton(text = "Einstellungen",onClick = {selectedScreen = AppScreen.Settings})
                     Text("Status: ${if (state.isTracking) "Arbeitszeit laeuft" else "Gestoppt"} / Geofence: ${if (state.insideGeofence) "Innen" else "Aussen"}")
                     Text("Pause: ${state.accumulatedBreakMinutes} min${if (state.isBreakRunning) " + laufend" else ""}")
                     Text(message)
@@ -542,9 +544,9 @@ Text(
 ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Arbeitszeitparameter", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
-                OutlinedTextField(targetText, { onTargetTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Sollzeit pro Arbeitstag in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(breakText, { onBreakTextChange(it.filter { char -> char.isDigit() }.take(4)) }, label = { Text("Standardpause in Minuten") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(dayCloseText, onDayCloseTextChange, label = { Text("Tagesabschluss HH:mm") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                MatrixTextField(value = targetText,label = "Sollzeit pro Arbeitstag in Minuten",onValueChange = {onTargetTextChange(it.filter { char -> char.isDigit() }.take(4) ) })
+                MatrixTextField(value = breakText,label = "Standardpause in Minuten",onValueChange = {onBreakTextChange(it.filter { char -> char.isDigit() }.take(4) ) })
+                MatrixTextField(value = dayCloseText,label = "Tagesabschluss HH:mm",onValueChange = onDayCloseTextChange)
                 Button(onClick = { saveWorkSettings(dao, settings, targetText, breakText, dayCloseText, onMessage) }) { Text("Arbeitszeitparameter speichern") }
             }
         }
