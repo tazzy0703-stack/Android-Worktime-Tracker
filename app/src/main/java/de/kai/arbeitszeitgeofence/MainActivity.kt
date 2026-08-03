@@ -387,32 +387,87 @@ Text(
     }
 
     @Composable
-    private fun EntryCard(entry: WorkTimeEntryEntity, dao: WorkTimeDao, onEdit: () -> Unit, onMessage: (String) -> Unit) {
-        val gross = ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)
-        val pause = entry.breakMinutes.coerceIn(0, gross)
-        val net = gross - pause
-        Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
-)  {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${formatTime(entry.startEpochMillis)} - ${formatTime(entry.endEpochMillis)} | ${entry.source}")
-                Text("Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}")
-                if (entry.comment.isNotBlank()) Text(entry.comment)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = onEdit) { Text("Bearbeiten") }
-                    Button(onClick = {
-                        CoroutineScope(Dispatchers.IO).launch {
+private fun EntryCard(
+    entry: WorkTimeEntryEntity,
+    dao: WorkTimeDao,
+    onEdit: () -> Unit,
+    onMessage: (String) -> Unit
+) {
+
+    val gross =
+        ((entry.endEpochMillis - entry.startEpochMillis) / 60000L)
+            .toInt()
+            .coerceAtLeast(0)
+
+    val pause =
+        entry.breakMinutes.coerceIn(
+            0,
+            gross
+        )
+
+    val net = gross - pause
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MatrixSurface
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+
+            Text(
+                text = "${formatTime(entry.startEpochMillis)} - ${formatTime(entry.endEpochMillis)} | ${entry.source}",
+                color = ComposeColor.White
+            )
+
+            Text(
+                text = "Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}",
+                color = ComposeColor.White
+            )
+
+            if (entry.comment.isNotBlank()) {
+
+                Text(
+                    text = entry.comment,
+                    color = ComposeColor.White
+                )
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                MatrixButton(
+                    text = "Bearbeiten",
+                    onClick = onEdit
+                )
+
+                MatrixButton(
+                    text = "Loeschen",
+                    onClick = {
+
+                        CoroutineScope(
+                            Dispatchers.IO
+                        ).launch {
+
                             dao.deleteEntry(entry.id)
-                            runOnUiThread { onMessage("Eintrag geloescht") }
+
+                            runOnUiThread {
+                                onMessage(
+                                    "Eintrag geloescht"
+                                )
+                            }
                         }
-                    }) { Text("Loeschen") }
-                }
+                    }
+                )
             }
         }
     }
+}
 
     @Composable
     private fun EditEntryDialog(entry: WorkTimeEntryEntity, dao: WorkTimeDao, onDismiss: () -> Unit, onMessage: (String) -> Unit) {
