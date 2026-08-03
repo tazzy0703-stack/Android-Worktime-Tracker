@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.0.0 - 2026
+
+Erster stabiler Release der Anwendung.
+
+### Funktionen
+
+- Geofence-basierte Arbeitszeiterfassung
+- Manuelles Starten und Stoppen
+- Pausenverwaltung
+- Automatischer Tagesabschluss
+- Dashboard mit Kennzahlen
+- Tages-, Wochen-, Monats- und Jahresansicht
+- Bearbeitung von Arbeitszeiteinträgen
+- CSV-Export
+- Sondertage (Urlaub, Feiertag, Krank, Frei)
+- Konfigurierbare Arbeitstage
+- OpenStreetMap-Integration
+
+### Oberfläche
+
+- Matrix-inspiriertes Design
+- Dunkles Theme
+- KPI-Dashboard
+- Verbesserte Lesbarkeit
+
+### Technische Basis
+
+- Kotlin
+- Jetpack Compose
+- Room Database
+- Google Geofencing API
+- OSMdroid
+
+---
+
+## Roadmap
+
+Siehe:
+
+- docs/ROADMAP.md
+
 ## v0.7.0
 
 - Einträge editierbar:

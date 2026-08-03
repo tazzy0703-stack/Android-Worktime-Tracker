@@ -1,72 +1,45 @@
 # Release-Prozess
 
-## Voraussetzungen
+## Entwicklung
 
-GitHub Actions nutzt folgende Secrets:
+Änderungen werden lokal entwickelt und getestet.
 
-```text
-ANDROID_KEYSTORE_BASE64
-ANDROID_KEYSTORE_PASSWORD
-ANDROID_KEY_ALIAS
-ANDROID_KEY_PASSWORD
+## Build
+
+Release Build erzeugen:
+
+```bash
+./gradlew assembleRelease
 ```
 
-Der Keystore muss dauerhaft gesichert werden. Ohne denselben Keystore können spätere Updates der Release-App nicht sauber installiert werden.
+## Test
 
-## Version erhöhen
+Vor jedem Release prüfen:
 
-Vor einem Release in `app/build.gradle.kts` erhöhen:
+- App Start
+- Geofence
+- Dashboard
+- Export
+- Sondertage
+- Tagesabschluss
 
-```kotlin
-versionCode = <neue Nummer>
-versionName = "<neue Version>"
+## Veröffentlichung
+
+1. Git Tag erstellen
+2. GitHub Release anlegen
+3. APK hochladen
+4. Changelog aktualisieren
+
+## Versionierung
+
+Format:
+
+```text
+MAJOR.MINOR.PATCH
 ```
 
 Beispiel:
 
-```kotlin
-versionCode = 12
-versionName = "0.7.0"
-```
-
-## Commit und Push
-
-```powershell
-git status
-git add .
-git commit -m "Release v0.x.x"
-git push origin main
-```
-
-## GitHub Actions prüfen
-
-Nach dem Push läuft der Workflow:
-
 ```text
-Android APK
-```
-
-Erwartete Artifacts:
-
-```text
-ArbeitszeitGeofence-debug-apk
-ArbeitszeitGeofence-release-apk
-```
-
-Für Installation relevant:
-
-```text
-ArbeitszeitGeofence-release-apk
-→ app-release.apk
-```
-
-## Update-Test
-
-Nach Installation prüfen:
-
-```text
-1. App startet
-2. Daten bleiben erhalten
-3. Version ist aktualisiert
-4. Kernfunktionen funktionieren
+1.0.0
 ```

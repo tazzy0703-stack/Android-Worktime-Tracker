@@ -1,58 +1,31 @@
 # Installation
 
-## APK herunterladen
+## Voraussetzungen
 
-Die App wird privat über GitHub Actions verteilt.
+- Android Smartphone
+- Android 10 oder neuer
+- Standortdienste aktiviert
 
-Pfad:
+## Installation per APK
 
-```text
-GitHub Repository
-→ Actions
-→ Android APK
-→ erfolgreicher Workflow-Lauf
-→ Artifacts
-→ ArbeitszeitGeofence-release-apk
-```
+1. APK herunterladen
+2. Installation aus unbekannten Quellen erlauben
+3. APK installieren
+4. App starten
 
-Artifact herunterladen und entpacken.
+## Erster Start
 
-Darin liegt:
+Nach dem ersten Start:
 
-```text
-app-release.apk
-```
+1. Standortberechtigung erteilen
+2. Benachrichtigungsberechtigung erteilen
+3. Arbeitsplatzposition festlegen
+4. Geofence registrieren
 
-## Installation auf Android
+## Empfehlung
 
-1. `app-release.apk` auf das Android-Gerät kopieren.
-2. APK öffnen.
-3. Falls Android die Installation blockiert:
+Vor produktiver Nutzung:
 
-```text
-Einstellungen öffnen
-→ Installation aus dieser Quelle erlauben
-→ Zurück
-→ Installieren
-```
-
-4. App starten.
-5. Berechtigungen erlauben.
-6. Einstellungen öffnen.
-7. Geofence konfigurieren.
-
-## Wichtiger Hinweis
-
-Für produktive Tests immer diese APK verwenden:
-
-```text
-app-release.apk
-```
-
-Nicht verwenden:
-
-```text
-app-debug.apk
-```
-
-Debug- und Release-Versionen haben unterschiedliche Signatur-/Paketkonfigurationen und können zu Update-Problemen führen.
+- Arbeitsplatz auf der Karte kontrollieren
+- Geofence testen
+- Tagesabschluss konfigurieren

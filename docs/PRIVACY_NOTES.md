@@ -1,46 +1,33 @@
-# Privacy Notes
+# Datenschutz
 
-Diese App ist für private Nutzung vorgesehen.
+## Grundsatz
 
-## Datenhaltung
+Die Anwendung speichert Arbeitszeitdaten lokal auf dem Gerät.
 
-Daten werden lokal auf dem Gerät gespeichert.
+## Keine Cloud-Anbindung
 
-Gespeichert werden:
+Die App verwendet:
 
-- Arbeitszeitblöcke
-- Start- und Endzeit
-- Pausenzeit
-- Quelle des Eintrags
-- Kommentare
-- Geofence-Einstellungen
-- Arbeitszeitparameter
-
-## Keine Cloud-Synchronisation
-
-Aktuell gibt es keine Cloud-Synchronisation.
-
-## Keine Werbung / Analytics
-
-Aktuell gibt es:
-
+- keine Cloud-Dienste
+- keine Benutzerkonten
+- keine Telemetrie
+- kein Tracking
 - keine Werbung
-- keine Analytics
-- keine Tracking-SDKs
 
 ## Standortdaten
 
-Standortdaten werden für den Arbeitsplatz-Geofence verwendet.
+Standortdaten werden ausschließlich zur Geofence-Erkennung verwendet.
 
-Zweck:
+Es erfolgt keine Übertragung an externe Dienste.
 
-- Arbeitszeit automatisch starten
-- Arbeitszeit automatisch stoppen
+## Arbeitszeitdaten
 
-Die App speichert aktuell nur die gewählte Arbeitsplatz-Koordinate und den Radius.
+Arbeitszeitdaten:
 
-## Export
+- verbleiben lokal auf dem Gerät
+- werden nicht an Dritte übertragen
+- werden nicht automatisiert ausgewertet
 
-Ein CSV-Export ist geplant.
+## Kartenanzeige
 
-Export erfolgt nur durch aktive Nutzeraktion.
+Für die Kartenansicht werden OpenStreetMap-Kartendaten genutzt.

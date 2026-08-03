@@ -1,79 +1,43 @@
 # Roadmap
 
-## v0.7.x – Realtest und Stabilisierung
+## Version 1.0
 
-Ziel: App mehrere Tage unter realen Bedingungen testen.
+Abgeschlossen:
 
-Beobachten:
-
-- Geofence ENTER startet zuverlässig
-- Geofence EXIT stoppt zuverlässig
-- Keine doppelten Blöcke
-- Tagesabschluss verhält sich korrekt
-- Pausenlogik passt
-- Update-Installation bleibt sauber
-- Akkuoptimierung beeinflusst Geofence nicht kritisch
-
-## v0.8.0 – Export
-
-Geplant:
-
+- Geofence-Erkennung
+- Dashboard
 - CSV-Export
-- Export nach Zeitraum:
-  - Tag
-  - Woche
-  - Monat
-  - Jahr
-  - Alle
-- Spalten:
-  - Datum
-  - Start
-  - Ende
-  - Brutto
-  - Pause
-  - Netto
-  - Soll
-  - Saldo
-  - Quelle
-  - Kommentar
-- Export über Android-Dateidialog
-- Dateiname z. B.:
+- Sondertage
+- Arbeitszeitverwaltung
+- Kartenintegration
+- Matrix-UI
 
-```text
-arbeitszeit_export_2026-07-27.csv
-```
+---
 
-Optional später:
+## Geplante Erweiterungen
 
-- JSON-Backup
-- Restore-Funktion
+### Backup / Restore
 
-## v0.9.0 – Matrix Theme / Dashboard UI
+- Export lokaler Einstellungen
+- Wiederherstellung auf neuem Gerät
 
-Geplant:
+### Widget
 
-- Dunkles Matrix-Style-Theme
-- Dashboard-Optik statt Formular-Optik
-- Karten-/Zeiten-Kacheln
-- Farbige Saldoanzeige
-- Icons
-- Hervorgehobener Status:
-  - Arbeitszeit aktiv
-  - Pause aktiv
-  - Gestoppt
-- Optische Trennung von:
-  - Status
-  - Statistik
-  - Einträgen
-  - Einstellungen
+- Aktuelle Arbeitszeit
+- Tagesstatus
 
-## v1.0.0 – Private Stable Release
+### Statistiken
 
-Geplant:
+- Erweiterte Auswertungen
+- Trendanalysen
 
-- Realtest-Fixes
-- Export finalisieren
-- UI finalisieren
-- Berechtigungs-/Akkuhinweise ergänzen
-- Technische Bereinigung
-- Signierte private Release-Version
+### UI
+
+- Weitere Designverbesserungen
+- Zusätzliche Themes
+
+---
+
+## Aktueller Status
+
+Funktionsfähiger Privat-Release.
