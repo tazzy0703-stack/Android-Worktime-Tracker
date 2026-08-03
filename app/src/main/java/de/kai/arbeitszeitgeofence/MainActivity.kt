@@ -780,47 +780,147 @@ private fun WorkdayButton(
     }
 }
 
-    @Composable
-    private fun DayOverrideSettingsCard(dayOverrides: List<DayOverride>, onDayOverridesChange: (List<DayOverride>) -> Unit, onMessage: (String) -> Unit) {
-        var dateText by remember { mutableStateOf(LocalDate.now().toString()) }
-        var typeText by remember { mutableStateOf("Urlaub") }
-        var commentText by remember { mutableStateOf("") }
-        Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
+   @Composable
+private fun DayOverrideSettingsCard(
+    dayOverrides: List<DayOverride>,
+    onDayOverridesChange: (List<DayOverride>) -> Unit,
+    onMessage: (String) -> Unit
 ) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Sondertage / Abwesenheiten", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
-                OutlinedTextField(dateText, { dateText = it }, label = { Text("Datum yyyy-MM-dd") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("Urlaub", "Feiertag", "Krank", "Frei").forEach { type -> Button(onClick = { typeText = type }) { Text(type) } }
+
+    var dateText by remember { mutableStateOf(LocalDate.now().toString()) }
+    var typeText by remember { mutableStateOf("Urlaub") }
+    var commentText by remember { mutableStateOf("") }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MatrixSurface
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+
+            Text(
+                text = "Sondertage / Abwesenheiten",
+                style = MaterialTheme.typography.titleLarge,
+                color = MatrixGreen
+            )
+
+            MatrixTextField(
+                value = dateText,
+                label = "Datum yyyy-MM-dd",
+                onValueChange = {
+                    dateText = it
                 }
-                OutlinedTextField(typeText, { typeText = it }, label = { Text("Typ") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(commentText, { commentText = it }, label = { Text("Kommentar") }, modifier = Modifier.fillMaxWidth())
-                Button(onClick = {
-                    if (runCatching { LocalDate.parse(dateText) }.isFailure) {
-                        onMessage("Datum ungueltig")
-                    } else {
-                        val updated = dayOverrides.filterNot { it.localDate == dateText } + DayOverride(dateText, typeText, commentText)
-                        onDayOverridesChange(updated.sortedByDescending { it.localDate })
-                        onMessage("Sondertag gespeichert")
-                    }
-                }) { Text("Sondertag speichern") }
-                dayOverrides.take(10).forEach { dayOverride ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("${dayOverride.localDate} | ${dayOverride.type}")
-                        Button(onClick = {
-                            onDayOverridesChange(dayOverrides.filterNot { it.localDate == dayOverride.localDate })
-                            onMessage("Sondertag geloescht")
-                        }) { Text("Loeschen") }
-                    }
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+
+                listOf(
+                    "Urlaub",
+                    "Feiertag",
+                    "Krank",
+                    "Frei"
+                ).forEach { type ->
+
+                    MatrixButton(
+                        text = type,
+                        onClick = {
+                            typeText = type
+                        }
+                    )
                 }
             }
+
+            MatrixTextField(
+                value = typeText,
+                label = "Typ",
+                onValueChange = {
+                    typeText = it
+                }
+            )
+
+            MatrixTextField(
+                value = commentText,
+                label = "Kommentar",
+                onValueChange = {
+                    commentText = it
+                }
+            )
+
+            MatrixButton(
+                text = "Sondertag speichern",
+                onClick = {
+
+                    if (
+                        runCatching {
+                            LocalDate.parse(dateText)
+                        }.isFailure
+                    ) {
+                        onMessage("Datum ungueltig")
+                    } else {
+
+                        val updated =
+                            dayOverrides.filterNot {
+                                it.localDate == dateText
+                            } + DayOverride(
+                                dateText,
+                                typeText,
+                                commentText
+                            )
+
+                        onDayOverridesChange(
+                            updated.sortedByDescending {
+                                it.localDate
+                            }
+                        )
+
+                        onMessage(
+                            "Sondertag gespeichert"
+                        )
+                    }
+                }
+            )
+
+            dayOverrides
+                .take(10)
+                .forEach { dayOverride ->
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        Text(
+                            text = "${dayOverride.localDate} | ${dayOverride.type}",
+                            color = ComposeColor.White
+                        )
+
+                        MatrixButton(
+                            text = "Loeschen",
+                            onClick = {
+
+                                onDayOverridesChange(
+                                    dayOverrides.filterNot {
+                                        it.localDate ==
+                                                dayOverride.localDate
+                                    }
+                                )
+
+                                onMessage(
+                                    "Sondertag geloescht"
+                                )
+                            }
+                        )
+                    }
+                }
         }
     }
-
+}
     @Composable
     private fun AppResetCard(dao: WorkTimeDao, onDayOverridesChange: (List<DayOverride>) -> Unit, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
         var confirmReset by remember { mutableStateOf(false) }
