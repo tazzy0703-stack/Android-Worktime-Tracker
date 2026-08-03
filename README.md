@@ -55,15 +55,15 @@ Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im def
 
 ### Dashboard
 
-/../docs/images/dashboard.png
+/docs/images/dashboard.png
 
 ### Zeiterfassung
 
-/../docs/images/times.png
+/docs/images/times.png
 
 ### Einstellungen
 
-/../docs/images/settings.png
+/docs/images/settings.png
 
 ---
 
@@ -108,7 +108,7 @@ Weitere Unterlagen befinden sich im Verzeichnis `docs`.
 
 ### Projektunterlagen
 
--   docs/CHANGELOG.md [docs/CHANGELOG.md](docs/CHANGELOG.md)
+-   [docs/CHANGELOG.md](docs/CHANGELOG.md)
 -   [docs/INSTALLATION.md](docs/INSTALLATION.md)
 -   [docs/PERMISSIONS.md](docs/PERMISSIONS.md)
 -   [docs/PRIVACY_NOTES.md](docs/PRIVACY_NOTES.md)
@@ -118,7 +118,7 @@ Weitere Unterlagen befinden sich im Verzeichnis `docs`.
 
 ### Design
 
--   \[Matrix Theme\_THEME.md
+-   [Matrix_THEME.md[design/Matrix_THEME.md](design/Matrix_THEME.md)
 
 ---
 
