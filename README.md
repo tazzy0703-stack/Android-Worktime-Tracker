@@ -1,6 +1,3 @@
-<img width="1080" height="2186" alt="times" src="https://github.com/user-attachments/assets/8860d837-d588-49e1-9be1-c7f089ea4052" />
-<img width="1080" height="2186" alt="settings" src="https://github.com/user-attachments/assets/1b405e4f-37aa-42f4-8731-4e4938ea07fc" />
-<img width="1080" height="2186" alt="dashboard" src="https://github.com/user-attachments/assets/5cfeb97a-e0f5-43d2-8404-a3947f6cd064" />
 # Arbeitszeit Geofence
 
 Private Android-App zur automatischen Arbeitszeiterfassung per Arbeitsplatz-Geofence.
@@ -58,15 +55,15 @@ Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im def
 
 ### Dashboard
 
-/docs/images/dashboard.png
+<img width="360" height="728" alt="dashboard" src="https://github.com/tazzy0703-stack/Android-Worktime-Tracker/blob/main/docs/images/dashboard.png" />
 
 ### Zeiterfassung
 
-/docs/images/times.png
+<img width="360" height="728" alt="times" src="https://github.com/tazzy0703-stack/Android-Worktime-Tracker/blob/main/docs/images/times.png" />
 
 ### Einstellungen
 
-/docs/images/settings.png
+<img width="360" height="728" alt="settings" src="https://github.com/tazzy0703-stack/Android-Worktime-Tracker/blob/main/docs/images/settings.png" />
 
 ---
 
