@@ -451,7 +451,7 @@ Text(
     }
 )
                 Text("Bloecke: ${summary.entries.size}", color = ComposeColor.White)
-                if (summary.entries.isNotEmpty()) Button(onClick = onDetails) { Text("Details") }
+                if (summary.entries.isNotEmpty()) {MatrixButton(text = "Details",onClick = onDetails) }
             }
         }
     }
@@ -1099,15 +1099,15 @@ private fun DayOverrideSettingsCard(
 ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("App Reset", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
-                Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.")
-                Button(onClick = { confirmReset = true }) { Text("App Reset") }
+                Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.",color = ComposeColor.White)
+                MatrixButton(text = "App Reset",onClick = {confirmReset = true})
             }
         }
         if (confirmReset) {
             AlertDialog(
                 onDismissRequest = { confirmReset = false },
                 title = { Text("App wirklich zuruecksetzen?") },
-                text = { Text("Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.") },
+                text = { Text("Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.",color = ComposeColor.White) },
                 confirmButton = {
                     TextButton(onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
@@ -1188,7 +1188,7 @@ private fun DayOverrideSettingsCard(
     colors = CardDefaults.cardColors(
         containerColor = MatrixSurface
     )
-) { Column(modifier = Modifier.padding(12.dp)) { Text("Noch keine Karte verfuegbar."); Text("Bitte zuerst aktuelle Position speichern oder per Karte setzen.") } }
+) { Column(modifier = Modifier.padding(12.dp)) { Text("Noch keine Karte verfuegbar.",color = ComposeColor.White); Text("Bitte zuerst aktuelle Position speichern oder per Karte setzen.",color = ComposeColor.White) } }
             return
         }
         AndroidView(
