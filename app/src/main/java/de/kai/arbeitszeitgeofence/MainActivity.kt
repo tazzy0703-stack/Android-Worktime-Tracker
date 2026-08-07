@@ -260,7 +260,11 @@ Text(
 
         LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
 item {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
 
         MatrixButton(
             text = "Start",
@@ -283,10 +287,6 @@ item {
                 onMessage("Manuell gestoppt")
             }
         )
-    }
-}
-item {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 
         MatrixButton(
             text = "Pause Start",
@@ -312,8 +312,13 @@ item {
     }
 }
 
-            item {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+item {
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
 
         MatrixButton(
             text = "Tagesabschluss",
@@ -334,9 +339,16 @@ item {
         )
 
         MatrixButton(
-            text = "Alle Eintraege loeschen",
+            text = "Export",
             onClick = {
-                confirmDeleteAll = true
+                exportCsv(
+                    selectedTimeView,
+                    dailySummaries
+                )
+
+                onMessage(
+                    "CSV Export vorbereitet"
+                )
             }
         )
     }
@@ -364,23 +376,14 @@ item {
         }
     }
 }
-            if (selectedTimeView != TimeView.Day) {
-    item {
+item {
 
-        MatrixButton(
-            text = "Export ${selectedTimeView.label} CSV",
-            onClick = {
-                exportCsv(
-                    selectedTimeView,
-                    dailySummaries
-                )
-
-                onMessage(
-                    "CSV Export vorbereitet"
-                )
-            }
-        )
-    }
+    MatrixButton(
+        text = "Alle Eintraege loeschen",
+        onClick = {
+            confirmDeleteAll = true
+        }
+    )
 }
             item { PeriodSummaryCard(selectedTimeView, periodSummary) }
             item { Text("Tage ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen) }
