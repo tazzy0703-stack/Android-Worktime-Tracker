@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -27,11 +28,15 @@ fun MatrixCard(
         ),
         border = BorderStroke(
             1.dp,
-            MatrixGreenDark
+            MatrixGreen.copy(alpha = 0.35f)
+        ),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
         )
     ) {
         Column(
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             content()
         }
@@ -45,16 +50,24 @@ fun MatrixButton(
 ) {
     Button(
         onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MatrixGreen,
             contentColor = Color.Black
         ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp
+        ),
         contentPadding = PaddingValues(
-            horizontal = 16.dp,
-            vertical = 10.dp
+            horizontal = 18.dp,
+            vertical = 12.dp
         )
     ) {
-        Text(text)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }
 
@@ -78,3 +91,4 @@ fun MatrixText(
         color = MatrixText
     )
 }
+`
