@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -361,16 +362,27 @@ item {
 
         TimeView.entries.forEachIndexed { index, view ->
 
-            SegmentedButton(
-                selected = selectedTimeView == view,
-                onClick = {
-                    selectedTimeView = view
-                },
-                shape = SegmentedButtonDefaults.itemShape(
-                    index = index,
-                    count = TimeView.entries.size
-                )
-            ) {
+         SegmentedButton(
+    selected = selectedTimeView == view,
+    onClick = {
+        selectedTimeView = view
+    },
+    shape = SegmentedButtonDefaults.itemShape(
+        index = index,
+        count = TimeView.entries.size
+    ),
+    colors = SegmentedButtonDefaults.colors(
+        activeContainerColor = MatrixGreen,
+        activeContentColor = MatrixBackground,
+        inactiveContainerColor = MatrixSurface,
+        inactiveContentColor = MatrixGreen
+    ),
+    border = BorderStroke(
+        1.dp,
+        MatrixGreen.copy(alpha = 0.5f)
+    )
+)
+			{
                 Text(view.label)
             }
         }
