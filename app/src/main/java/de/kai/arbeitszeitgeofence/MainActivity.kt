@@ -13,6 +13,9 @@ import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -338,16 +341,25 @@ item {
     }
 }
             item {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
 
-        TimeView.entries.forEach { view ->
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier.fillMaxWidth()
+    ) {
 
-            MatrixButton(
-                text = view.label,
+        TimeView.entries.forEachIndexed { index, view ->
+
+            SegmentedButton(
+                selected = selectedTimeView == view,
                 onClick = {
                     selectedTimeView = view
-                }
-            )
+                },
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = TimeView.entries.size
+                )
+            ) {
+                Text(view.label)
+            }
         }
     }
 }
