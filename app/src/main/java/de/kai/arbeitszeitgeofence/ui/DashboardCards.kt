@@ -118,4 +118,27 @@ fun MonthProgressCard() {
             "${(progress * 100).toInt()} %"
         )
     }
+	@Composable
+fun DashboardKpiCard(
+    title: String,
+    value: String,
+    color: androidx.compose.ui.graphics.Color = MatrixText
+) {
+
+    MatrixCard {
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+
+            MatrixHeader(title)
+
+            Text(
+                text = value,
+                color = color,
+                style = MaterialTheme.typography.headlineSmall
+            )
+        }
+    }
+}
 }

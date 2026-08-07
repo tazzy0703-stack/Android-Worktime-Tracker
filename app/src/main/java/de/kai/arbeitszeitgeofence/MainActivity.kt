@@ -17,6 +17,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -456,32 +457,89 @@ Text(
         }
     }
 
-    @Composable
-    private fun PeriodSummaryCard(view: TimeView, summary: PeriodSummary) {
-        Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
+@Composable
+private fun PeriodSummaryCard(
+    view: TimeView,
+    summary: PeriodSummary
 ) {
-            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Zusammenfassung ${view.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
-                Text("Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}")
-                Text("Brutto: ${formatMinutes(summary.grossMinutes)}", color = ComposeColor.White)
-                Text("Pause: ${formatMinutes(summary.breakMinutes)}", color = ComposeColor.White)
-                Text("Netto: ${formatMinutes(summary.netMinutes)}", color = ComposeColor.White)
-                Text("Soll: ${formatMinutes(summary.targetMinutes)}", color = ComposeColor.White)
-                Text(
-    text = "Saldo: ${formatSignedMinutes(summary.balanceMinutes)}",
-    color = when {
-        summary.balanceMinutes > 0 -> MatrixGreen
-        summary.balanceMinutes < 0 -> MatrixRed
-        else -> ComposeColor.Gray
-    }
-)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MatrixSurface
+        )
+    ) {
+
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+
+            Text(
+                text = "Zusammenfassung ${view.label}",
+                style = MaterialTheme.typography.titleLarge,
+                color = MatrixGreen
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    DashboardKpiCard(
+                        title = "Netto",
+                        value = formatMinutes(summary.netMinutes)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    DashboardKpiCard(
+                        title = "Saldo",
+                        value = formatSignedMinutes(summary.balanceMinutes),
+                        color = when {
+                            summary.balanceMinutes > 0 -> MatrixGreen
+                            summary.balanceMinutes < 0 -> MatrixRed
+                            else -> ComposeColor.Gray
+                        }
+                    )
+                }
             }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    DashboardKpiCard(
+                        title = "Pause",
+                        value = formatMinutes(summary.breakMinutes)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    DashboardKpiCard(
+                        title = "Soll",
+                        value = formatMinutes(summary.targetMinutes)
+                    )
+                }
+            }
+
+            Text(
+                text = "Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}",
+                color = ComposeColor.White
+            )
         }
     }
+}
 
     @Composable
     private fun DayDetailsDialog(summary: DailySummary, dao: WorkTimeDao, onDismiss: () -> Unit, onEdit: (WorkTimeEntryEntity) -> Unit, onMessage: (String) -> Unit) {
