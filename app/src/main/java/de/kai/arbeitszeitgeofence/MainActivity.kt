@@ -5,6 +5,7 @@ import de.kai.arbeitszeitgeofence.ui.MatrixTextField
 import de.kai.arbeitszeitgeofence.ui.MatrixBackground
 import de.kai.arbeitszeitgeofence.ui.MatrixSurface
 import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
+import de.kai.arbeitszeitgeofence.ui.DashboardKpiCard
 import android.Manifest
 import android.annotation.SuppressLint
 import android.graphics.Color

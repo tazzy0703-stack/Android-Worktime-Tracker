@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 
 @Composable
@@ -118,7 +119,9 @@ fun MonthProgressCard() {
             "${(progress * 100).toInt()} %"
         )
     }
-	@Composable
+}
+
+@Composable
 fun DashboardKpiCard(
     title: String,
     value: String,
@@ -140,5 +143,4 @@ fun DashboardKpiCard(
             )
         }
     }
-}
 }
