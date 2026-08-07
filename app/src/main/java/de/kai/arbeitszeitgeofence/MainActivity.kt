@@ -183,9 +183,10 @@ class MainActivity : ComponentActivity() {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         MatrixButton(text = "Zeiten",onClick = {selectedScreen = AppScreen.Times})
                         MatrixButton(text = "Einstellungen",onClick = {selectedScreen = AppScreen.Settings})}
-                    Text("Status: ${if (state.isTracking) "Arbeitszeit laeuft" else "Gestoppt"} / Geofence: ${if (state.insideGeofence) "Innen" else "Aussen"}")
-                    Text("Pause: ${state.accumulatedBreakMinutes} min${if (state.isBreakRunning) " + laufend" else ""}")
-                    Text(message)
+Text(
+    text = message,
+    color = MatrixGreen
+)
 					HeroStatusCard(
 					isTracking = state.isTracking,
 					pauseMinutes = state.accumulatedBreakMinutes,
