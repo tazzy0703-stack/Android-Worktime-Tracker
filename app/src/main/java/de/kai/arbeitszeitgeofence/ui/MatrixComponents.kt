@@ -50,14 +50,18 @@ fun MatrixButton(
 ) {
     Button(
         onClick = onClick,
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MatrixGreen,
-            contentColor = Color.Black
+            containerColor = MatrixSurface,
+            contentColor = MatrixGreen
+        ),
+        border = BorderStroke(
+            1.dp,
+            MatrixGreen.copy(alpha = 0.50f)
         ),
         elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 4.dp,
-            pressedElevation = 8.dp
+            defaultElevation = 1.dp,
+            pressedElevation = 4.dp
         ),
         contentPadding = PaddingValues(
             horizontal = 18.dp,
