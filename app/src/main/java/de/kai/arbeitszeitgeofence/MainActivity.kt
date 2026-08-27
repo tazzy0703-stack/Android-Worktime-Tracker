@@ -54,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color as ComposeColor
 import de.kai.arbeitszeitgeofence.ui.MatrixGreen
 import de.kai.arbeitszeitgeofence.ui.MatrixRed
-
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
