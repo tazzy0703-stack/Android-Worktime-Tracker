@@ -5,20 +5,20 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val MatrixBackground = Color(0xFF0B0F0C)
-val MatrixSurface = Color(0xFF141C18)
-val MatrixSurfaceRaised = Color(0xFF1B2721)
-val MatrixGreen = Color(0xFF7AE582)
-val MatrixGreenDark = Color(0xFF3CBF70)
+val MatrixBackground = Color(0xFF0D1B14)
+val MatrixSurface = Color(0xFF15271D)
+val MatrixSurfaceRaised = Color(0xFF1D3427)
+val MatrixGreen = Color(0xFF8ADBA0)
+val MatrixGreenDark = Color(0xFF5ABF7A)
 val MatrixRed = Color(0xFFFF6B6B)
 val MatrixBlue = Color(0xFF7CC7FF)
 val MatrixOrange = Color(0xFFFFC46B)
 val MatrixText = Color(0xFFF1F5F2)
 val MatrixMutedText = Color(0xFFB8C5BC)
 val MatrixInput = Color(0xFF18231D)
-val MatrixButton = Color(0xFF20352A)
-val MatrixDialog = Color(0xFF141C18)
-val MatrixOutline = Color(0xFF3A5144)
+val MatrixButton = Color(0xFF1C3526)
+val MatrixDialog = Color(0xFF15271D)
+val MatrixOutline = Color(0xFF385B44)
 
 private val MatrixColorScheme = darkColorScheme(
     primary = MatrixGreen,

@@ -40,6 +40,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Coffee
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.Composable
@@ -138,8 +143,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.statusBarColor = Color.BLACK
-        window.navigationBarColor = Color.BLACK
+        window.statusBarColor = Color.rgb(13, 27, 20)
+        window.navigationBarColor = Color.rgb(13, 27, 20)
         permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.POST_NOTIFICATIONS))
 
         val app = application as ArbeitszeitApp
@@ -290,6 +295,8 @@ item {
         MatrixButton(
             text = "Start",
             modifier = Modifier.weight(1f),
+            icon = Icons.Filled.PlayArrow,
+            emphasized = true,
             onClick = {
                 TrackingForegroundService.start(
                     this@MainActivity,
@@ -302,6 +309,7 @@ item {
         MatrixButton(
             text = "Stop",
             modifier = Modifier.weight(1f),
+            icon = Icons.Filled.Stop,
             onClick = {
                 TrackingForegroundService.start(
                     this@MainActivity,
@@ -322,6 +330,7 @@ item {
         MatrixButton(
             text = "Pause Start",
             modifier = Modifier.weight(1f),
+            icon = Icons.Filled.Coffee,
             onClick = {
                 TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_START)
                 onMessage("Pause gestartet")
@@ -330,6 +339,7 @@ item {
         MatrixButton(
             text = "Pause Stop",
             modifier = Modifier.weight(1f),
+            icon = Icons.Filled.Pause,
             onClick = {
                 TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_STOP)
                 onMessage("Pause gestoppt")
