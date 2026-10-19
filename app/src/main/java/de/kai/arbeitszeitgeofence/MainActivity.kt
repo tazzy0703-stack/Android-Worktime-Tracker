@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -51,9 +52,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.Color as ComposeColor
 import de.kai.arbeitszeitgeofence.ui.MatrixGreen
+import de.kai.arbeitszeitgeofence.ui.MatrixMutedText
+import de.kai.arbeitszeitgeofence.ui.MatrixOutline
 import de.kai.arbeitszeitgeofence.ui.MatrixRed
+import de.kai.arbeitszeitgeofence.ui.MatrixText
+import de.kai.arbeitszeitgeofence.ui.MatrixTheme
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -144,7 +148,7 @@ class MainActivity : ComponentActivity() {
         val geofenceManager = GeofenceManager(this)
 
         setContent {
-            MaterialTheme {
+            MatrixTheme {
                 val entries by dao.observeEntries().collectAsState(initial = emptyList())
                 val activeState by dao.observeActiveState().collectAsState(initial = null)
                 val settings by dao.observeSettings().collectAsState(initial = null)
@@ -182,9 +186,25 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Text("Arbeitszeit Matrix", style = MaterialTheme.typography.headlineMedium, color = MatrixGreen
 					)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        MatrixButton(text = "Zeiten",onClick = {selectedScreen = AppScreen.Times})
-                        MatrixButton(text = "Einstellungen",onClick = {selectedScreen = AppScreen.Settings})}
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        listOf(AppScreen.Times to "Zeiten", AppScreen.Settings to "Einstellungen")
+                            .forEachIndexed { index, (screen, label) ->
+                                SegmentedButton(
+                                    selected = selectedScreen == screen,
+                                    onClick = { selectedScreen = screen },
+                                    shape = SegmentedButtonDefaults.itemShape(index, 2),
+                                    colors = SegmentedButtonDefaults.colors(
+                                        activeContainerColor = MatrixGreen,
+                                        activeContentColor = MatrixBackground,
+                                        inactiveContainerColor = MatrixSurface,
+                                        inactiveContentColor = MatrixText
+                                    ),
+                                    border = BorderStroke(1.dp, MatrixOutline)
+                                ) {
+                                    Text(label)
+                                }
+                            }
+                    }
 Text(
     text = message,
     color = MatrixGreen
@@ -267,9 +287,9 @@ item {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-
         MatrixButton(
             text = "Start",
+            modifier = Modifier.weight(1f),
             onClick = {
                 TrackingForegroundService.start(
                     this@MainActivity,
@@ -281,6 +301,7 @@ item {
 
         MatrixButton(
             text = "Stop",
+            modifier = Modifier.weight(1f),
             onClick = {
                 TrackingForegroundService.start(
                     this@MainActivity,
@@ -290,24 +311,27 @@ item {
             }
         )
 
+    }
+}
+
+item {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         MatrixButton(
             text = "Pause Start",
+            modifier = Modifier.weight(1f),
             onClick = {
-                TrackingForegroundService.start(
-                    this@MainActivity,
-                    TrackingForegroundService.ACTION_PAUSE_START
-                )
+                TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_START)
                 onMessage("Pause gestartet")
             }
         )
-
         MatrixButton(
             text = "Pause Stop",
+            modifier = Modifier.weight(1f),
             onClick = {
-                TrackingForegroundService.start(
-                    this@MainActivity,
-                    TrackingForegroundService.ACTION_PAUSE_STOP
-                )
+                TrackingForegroundService.start(this@MainActivity, TrackingForegroundService.ACTION_PAUSE_STOP)
                 onMessage("Pause gestoppt")
             }
         )
@@ -430,15 +454,15 @@ item {
     @Composable
     private fun DailySummaryCard(summary: DailySummary, onDetails: () -> Unit) {
         Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
-) {
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
+    ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}", color = ComposeColor.White)
+                Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}", color = MatrixText)
                 summary.dayOverride?.let { Text("Sondertag: ${it.type}${if (it.comment.isNotBlank()) " - ${it.comment}" else ""}") }
-                Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}", color = ComposeColor.White)
+                Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}", color = MatrixText)
                 Text(
     "Soll: ${formatMinutes(summary.targetMinutes)}"
 )
@@ -448,10 +472,10 @@ Text(
     color = when {
         summary.balanceMinutes > 0 -> MatrixGreen
         summary.balanceMinutes < 0 -> MatrixRed
-        else -> ComposeColor.Gray
+        else -> MatrixMutedText
     }
 )
-                Text("Bloecke: ${summary.entries.size}", color = ComposeColor.White)
+                Text("Bloecke: ${summary.entries.size}", color = MatrixText)
                 if (summary.entries.isNotEmpty()) {MatrixButton(text = "Details",onClick = onDetails) }
             }
         }
@@ -464,9 +488,9 @@ private fun PeriodSummaryCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
     ) {
 
         Column(
@@ -503,7 +527,7 @@ private fun PeriodSummaryCard(
                         color = when {
                             summary.balanceMinutes > 0 -> MatrixGreen
                             summary.balanceMinutes < 0 -> MatrixRed
-                            else -> ComposeColor.Gray
+                            else -> MatrixMutedText
                         }
                     )
                 }
@@ -535,7 +559,7 @@ private fun PeriodSummaryCard(
 
             Text(
                 text = "Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}",
-                color = ComposeColor.White
+                color = MatrixText
             )
         }
     }
@@ -579,9 +603,9 @@ private fun EntryCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
     ) {
 
         Column(
@@ -591,19 +615,19 @@ private fun EntryCard(
 
             Text(
                 text = "${formatTime(entry.startEpochMillis)} - ${formatTime(entry.endEpochMillis)} | ${entry.source}",
-                color = ComposeColor.White
+                color = MatrixText
             )
 
             Text(
                 text = "Netto: ${formatMinutes(net)} | Pause: ${formatMinutes(pause)}",
-                color = ComposeColor.White
+                color = MatrixText
             )
 
             if (entry.comment.isNotBlank()) {
 
                 Text(
                     text = entry.comment,
-                    color = ComposeColor.White
+                    color = MatrixText
                 )
             }
 
@@ -731,9 +755,9 @@ private fun GeofenceSettingsCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
     ) {
 
         Column(
@@ -752,7 +776,7 @@ private fun GeofenceSettingsCard(
                     "Geofence Status: Aktiv"
                 else
                     "Geofence Status: Nicht registriert",
-                color = ComposeColor.White
+                color = MatrixText
             )
 
             geofenceRegisteredAt?.let {
@@ -764,7 +788,7 @@ private fun GeofenceSettingsCard(
                             ZoneId.systemDefault()
                         )
                     }",
-                    color = ComposeColor.White
+                    color = MatrixText
                 )
             }
 
@@ -813,7 +837,7 @@ private fun GeofenceSettingsCard(
 
             Text(
                 "Koordinate: ${settings.geofenceLatitude ?: "nicht gesetzt"}, ${settings.geofenceLongitude ?: "nicht gesetzt"}",
-                color = ComposeColor.White
+                color = MatrixText
             )
 
             MatrixButton(
@@ -899,9 +923,9 @@ private fun WorkSettingsCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -961,11 +985,11 @@ private fun WorkSettingsCard(
     @Composable
     private fun WorkdaySettingsCard(workdaySettings: WorkdaySettings, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
         Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
-) {
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
+    ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Regulaere Arbeitstage", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1018,9 +1042,9 @@ private fun DayOverrideSettingsCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MatrixSurface
-        )
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
     ) {
 
         Column(
@@ -1122,7 +1146,7 @@ private fun DayOverrideSettingsCard(
 
                         Text(
                             text = "${dayOverride.localDate} | ${dayOverride.type}",
-                            color = ComposeColor.White
+                            color = MatrixText
                         )
 
                         MatrixButton(
@@ -1150,14 +1174,14 @@ private fun DayOverrideSettingsCard(
     private fun AppResetCard(dao: WorkTimeDao, onDayOverridesChange: (List<DayOverride>) -> Unit, onWorkdaySettingsChange: (WorkdaySettings) -> Unit, onMessage: (String) -> Unit) {
         var confirmReset by remember { mutableStateOf(false) }
         Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
-) {
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
+    ) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("App Reset", style = MaterialTheme.typography.titleLarge, color = MatrixGreen)
-                Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.",color = ComposeColor.White)
+                Text("Loescht alle Eintraege, lokale Arbeitstage/Sondertage und setzt Einstellungen zurueck.",color = MatrixText)
                 MatrixButton(text = "App Reset",onClick = {confirmReset = true})
             }
         }
@@ -1165,7 +1189,7 @@ private fun DayOverrideSettingsCard(
             AlertDialog(
                 onDismissRequest = { confirmReset = false },
                 title = { Text("App wirklich zuruecksetzen?") },
-                text = { Text("Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.",color = ComposeColor.White) },
+                text = { Text("Alle Eintraege und lokalen Sonder-Einstellungen werden zurueckgesetzt.",color = MatrixText) },
                 confirmButton = {
                     TextButton(onClick = {
                         CoroutineScope(Dispatchers.IO).launch {
@@ -1242,11 +1266,11 @@ private fun DayOverrideSettingsCard(
         val lon = settings.geofenceLongitude
         if (lat == null || lon == null) {
             Card(
-    modifier = Modifier.fillMaxWidth(),
-    colors = CardDefaults.cardColors(
-        containerColor = MatrixSurface
-    )
-) { Column(modifier = Modifier.padding(12.dp)) { Text("Noch keine Karte verfuegbar.",color = ComposeColor.White); Text("Bitte zuerst aktuelle Position speichern oder per Karte setzen.",color = ComposeColor.White) } }
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MatrixOutline),
+        colors = CardDefaults.cardColors(containerColor = MatrixSurface)
+    ) { Column(modifier = Modifier.padding(12.dp)) { Text("Noch keine Karte verfuegbar.",color = MatrixText); Text("Bitte zuerst aktuelle Position speichern oder per Karte setzen.",color = MatrixText) } }
             return
         }
         AndroidView(
@@ -1415,5 +1439,3 @@ private fun DayOverrideSettingsCard(
         }
     }
 }
-
-

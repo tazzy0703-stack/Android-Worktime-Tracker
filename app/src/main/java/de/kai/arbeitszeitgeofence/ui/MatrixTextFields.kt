@@ -6,7 +6,6 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun MatrixTextField(
@@ -14,29 +13,21 @@ fun MatrixTextField(
     label: String,
     onValueChange: (String) -> Unit
 ) {
-
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth(),
-        label = {
-            Text(
-                text = label,
-                color = Color.White
-            )
-        },
+        label = { Text(text = label) },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-
+            focusedTextColor = MatrixText,
+            unfocusedTextColor = MatrixText,
             focusedLabelColor = MatrixGreen,
-            unfocusedLabelColor = Color.White,
-
+            unfocusedLabelColor = MatrixMutedText,
             focusedBorderColor = MatrixGreen,
-            unfocusedBorderColor = MatrixGreen,
-
-            focusedContainerColor = MatrixSurface,
-            unfocusedContainerColor = MatrixSurface
+            unfocusedBorderColor = MatrixOutline,
+            cursorColor = MatrixGreen,
+            focusedContainerColor = MatrixInput,
+            unfocusedContainerColor = MatrixInput
         )
     )
 }
