@@ -34,7 +34,7 @@ fun MatrixCard(
         ),
         border = BorderStroke(
             1.dp,
-            if (emphasized) MatrixGreen else MatrixOutline
+            MatrixOutline
         ),
         shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(
@@ -67,7 +67,7 @@ fun MatrixButton(
         ),
         border = BorderStroke(
             1.dp,
-            MatrixOutline
+            if (emphasized) MatrixGreen else MatrixOutline
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 1.dp,
