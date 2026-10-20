@@ -8,8 +8,12 @@ import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
 import de.kai.arbeitszeitgeofence.ui.DashboardKpiCard
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -57,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import de.kai.arbeitszeitgeofence.ui.MatrixGreen
 import de.kai.arbeitszeitgeofence.ui.MatrixMutedText
 import de.kai.arbeitszeitgeofence.ui.MatrixOutline
@@ -70,6 +75,7 @@ import de.kai.arbeitszeitgeofence.data.SettingsEntity
 import de.kai.arbeitszeitgeofence.data.WorkTimeDao
 import de.kai.arbeitszeitgeofence.data.WorkTimeEntryEntity
 import de.kai.arbeitszeitgeofence.domain.WorkSessionManager
+import de.kai.arbeitszeitgeofence.domain.WorkScheduleCalculator
 import de.kai.arbeitszeitgeofence.geofence.GeofenceManager
 import de.kai.arbeitszeitgeofence.service.TrackingForegroundService
 import de.kai.arbeitszeitgeofence.worker.DayCloseWorker
@@ -110,6 +116,8 @@ private data class DailySummary(
     val grossMinutes: Int,
     val breakMinutes: Int,
     val netMinutes: Int,
+    val creditedMinutes: Int,
+    val isScheduledWorkday: Boolean,
     val targetMinutes: Int,
     val balanceMinutes: Int
 )
@@ -120,6 +128,8 @@ private data class PeriodSummary(
     val grossMinutes: Int,
     val breakMinutes: Int,
     val netMinutes: Int,
+    val creditedMinutes: Int,
+    val paidAbsenceDayCount: Int,
     val targetMinutes: Int,
     val balanceMinutes: Int
 )
@@ -160,7 +170,7 @@ class MainActivity : ComponentActivity() {
                 var message by remember { mutableStateOf("Bereit") }
                 var selectedScreen by remember { mutableStateOf(AppScreen.Times) }
                 var radiusText by remember { mutableStateOf("120") }
-                var targetText by remember { mutableStateOf("480") }
+                var targetText by remember { mutableStateOf("8") }
                 var defaultBreakText by remember { mutableStateOf("45") }
                 var dayCloseText by remember { mutableStateOf("23:59") }
                 var geofenceRegistered by remember { mutableStateOf(readGeofenceRegistered()) }
@@ -172,12 +182,46 @@ class MainActivity : ComponentActivity() {
                     if (dao.getActiveState() == null) dao.upsertActiveState(WorkSessionManager.initialState())
                     if (dao.getSettings() == null) dao.upsertSettings(SettingsEntity())
                     DayCloseWorker.scheduleNext(this@MainActivity)
+
+                    if (readGeofenceDesiredEnabled()) {
+                        val savedSettings = dao.getSettings() ?: SettingsEntity()
+                        val latitude = savedSettings.geofenceLatitude
+                        val longitude = savedSettings.geofenceLongitude
+                        if (latitude != null && longitude != null && hasRequiredGeofencePermissions()) {
+                            runCatching {
+                                geofenceManager.registerWorkplaceGeofence(
+                                    latitude,
+                                    longitude,
+                                    savedSettings.geofenceRadiusMeters
+                                ).addOnSuccessListener {
+                                    val registeredAt = Instant.now().toEpochMilli()
+                                    writeGeofenceStatus(true, registeredAt, updateDesired = false)
+                                    geofenceRegistered = true
+                                    geofenceRegisteredAt = registeredAt
+                                }.addOnFailureListener { exception ->
+                                    writeGeofenceStatus(false, null, updateDesired = false)
+                                    geofenceRegistered = false
+                                    geofenceRegisteredAt = null
+                                    message = "Geofence-Wiederherstellung fehlgeschlagen: ${exception.localizedMessage ?: "unbekannter Fehler"}"
+                                }
+                            }.onFailure { exception ->
+                                writeGeofenceStatus(false, null, updateDesired = false)
+                                geofenceRegistered = false
+                                geofenceRegisteredAt = null
+                                message = "Geofence-Wiederherstellung fehlgeschlagen: ${exception.localizedMessage ?: "unbekannter Fehler"}"
+                            }
+                        } else {
+                            writeGeofenceStatus(false, null, updateDesired = false)
+                            geofenceRegistered = false
+                            geofenceRegisteredAt = null
+                        }
+                    }
                 }
 
                 LaunchedEffect(settings) {
                     val effective = settings ?: SettingsEntity()
                     radiusText = effective.geofenceRadiusMeters.toInt().toString()
-                    targetText = effective.targetMinutesPerDay.toString()
+                    targetText = WorkScheduleCalculator.formatMinutesAsHours(effective.targetMinutesPerDay)
                     defaultBreakText = effective.defaultBreakMinutes.toString()
                     dayCloseText = effective.autoDayCloseTime
                 }
@@ -284,6 +328,11 @@ Text(
         var confirmDeleteAll by remember { mutableStateOf(false) }
         val dailySummaries = buildDailySummaries(entries, selectedTimeView, settings, workdaySettings, dayOverrides)
         val periodSummary = calculatePeriodSummary(dailySummaries)
+        val visibleDailySummaries = if (selectedTimeView == TimeView.Year) {
+            dailySummaries.filter { it.entries.isNotEmpty() || it.dayOverride != null }
+        } else {
+            dailySummaries.filter { it.isScheduledWorkday || it.entries.isNotEmpty() || it.dayOverride != null }
+        }
 
         LazyColumn(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
 item {
@@ -434,7 +483,7 @@ item {
 }
             item { PeriodSummaryCard(selectedTimeView, periodSummary) }
             item { Text("Tage ${selectedTimeView.label}", style = MaterialTheme.typography.titleLarge, color = MatrixGreen) }
-            items(dailySummaries) { dailySummary -> DailySummaryCard(dailySummary, onDetails = { selectedDay = dailySummary }) }
+            items(visibleDailySummaries) { dailySummary -> DailySummaryCard(dailySummary, onDetails = { selectedDay = dailySummary }) }
         }
 
         selectedDay?.let { summary ->
@@ -473,6 +522,9 @@ item {
                 Text("${weekdayLabel(summary.date.dayOfWeek)}, ${summary.date}", color = MatrixText)
                 summary.dayOverride?.let { Text("Sondertag: ${it.type}${if (it.comment.isNotBlank()) " - ${it.comment}" else ""}") }
                 Text("Arbeitszeit: ${formatMinutes(summary.netMinutes)} | Pause: ${formatMinutes(summary.breakMinutes)}", color = MatrixText)
+                if (summary.creditedMinutes > 0) {
+                    Text("Bezahlte Gutschrift: ${formatMinutes(summary.creditedMinutes)}", color = MatrixText)
+                }
                 Text(
     "Soll: ${formatMinutes(summary.targetMinutes)}"
 )
@@ -523,7 +575,7 @@ private fun PeriodSummaryCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     DashboardKpiCard(
-                        title = "Netto",
+                        title = "Netto Arbeit",
                         value = formatMinutes(summary.netMinutes)
                     )
                 }
@@ -552,8 +604,8 @@ private fun PeriodSummaryCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     DashboardKpiCard(
-                        title = "Pause",
-                        value = formatMinutes(summary.breakMinutes)
+                        title = "Gutschrift",
+                        value = formatMinutes(summary.creditedMinutes)
                     )
                 }
 
@@ -564,6 +616,18 @@ private fun PeriodSummaryCard(
                         title = "Soll",
                         value = formatMinutes(summary.targetMinutes)
                     )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(modifier = Modifier.weight(1f)) {
+                    DashboardKpiCard(title = "Pause", value = formatMinutes(summary.breakMinutes))
+                }
+                Box(modifier = Modifier.weight(1f)) {
+                    DashboardKpiCard(title = "Gutschrift-Tage", value = summary.paidAbsenceDayCount.toString())
                 }
             }
 
@@ -582,7 +646,7 @@ private fun PeriodSummaryCard(
             title = { Text("Details ${summary.date}") },
             text = {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item { Text("Netto: ${formatMinutes(summary.netMinutes)} | Soll: ${formatMinutes(summary.targetMinutes)} | Saldo: ${formatSignedMinutes(summary.balanceMinutes)}") }
+                    item { Text("Netto Arbeit: ${formatMinutes(summary.netMinutes)} | Gutschrift: ${formatMinutes(summary.creditedMinutes)} | Soll: ${formatMinutes(summary.targetMinutes)} | Saldo: ${formatSignedMinutes(summary.balanceMinutes)}") }
                     items(summary.entries) { entry -> EntryCard(entry, dao, onEdit = { onEdit(entry) }, onMessage = onMessage) }
                 }
             },
@@ -762,6 +826,7 @@ private fun GeofenceSettingsCard(
     geofenceManager: GeofenceManager,
     onMessage: (String) -> Unit
 ) {
+    var showBackgroundLocationHelp by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -863,38 +928,25 @@ private fun GeofenceSettingsCard(
                             "Keine Arbeitsplatz-Koordinate gesetzt"
                         )
 
+                    } else if (!hasRequiredGeofencePermissions()) {
+                        showBackgroundLocationHelp = true
                     } else {
-
+                        setGeofenceDesiredEnabled(true)
                         try {
-
-                            geofenceManager.registerWorkplaceGeofence(
-                                lat,
-                                lon,
-                                settings.geofenceRadiusMeters
-                            )
-
-                            val now =
-                                Instant.now().toEpochMilli()
-
-                            onGeofenceStatusChange(
-                                true,
-                                now
-                            )
-
-                            onMessage(
-                                "Geofence erfolgreich registriert"
-                            )
-
-                        } catch (ex: SecurityException) {
-
-                            onGeofenceStatusChange(
-                                false,
-                                null
-                            )
-
-                            onMessage(
-                                "Standortberechtigung fehlt: ${ex.message}"
-                            )
+                            geofenceManager.registerWorkplaceGeofence(lat, lon, settings.geofenceRadiusMeters)
+                                .addOnSuccessListener {
+                                    onGeofenceStatusChange(true, Instant.now().toEpochMilli())
+                                    onMessage("Geofence erfolgreich registriert")
+                                }
+                                .addOnFailureListener { exception ->
+                                    onGeofenceStatusChange(false, null)
+                                    setGeofenceDesiredEnabled(true)
+                                    onMessage("Geofence-Registrierung fehlgeschlagen: ${exception.localizedMessage ?: "unbekannter Fehler"}")
+                                }
+                        } catch (exception: SecurityException) {
+                            onGeofenceStatusChange(false, null)
+                            setGeofenceDesiredEnabled(true)
+                            onMessage("Standortberechtigung fehlt: ${exception.message}")
                         }
                     }
                 }
@@ -903,19 +955,42 @@ private fun GeofenceSettingsCard(
             MatrixButton(
                 text = "Geofence entfernen",
                 onClick = {
+                    setGeofenceDesiredEnabled(false)
                     geofenceManager.unregisterWorkplaceGeofence()
-
-                    onGeofenceStatusChange(
-                        false,
-                        null
-                    )
-
-                    onMessage(
-                        "Geofence entfernt"
-                    )
+                        .addOnSuccessListener {
+                            onGeofenceStatusChange(false, null)
+                            onMessage("Geofence entfernt")
+                        }
+                        .addOnFailureListener { exception ->
+                            onGeofenceStatusChange(true, readGeofenceRegisteredAt())
+                            setGeofenceDesiredEnabled(true)
+                            onMessage("Geofence konnte nicht entfernt werden: ${exception.localizedMessage ?: "unbekannter Fehler"}")
+                        }
                 }
             )
         }
+    }
+
+    if (showBackgroundLocationHelp) {
+        AlertDialog(
+            onDismissRequest = { showBackgroundLocationHelp = false },
+            title = { Text("Standortzugriff erforderlich") },
+            text = {
+                Text(
+                    "Für automatische Geofence-Erkennung im Hintergrund und nach einem Neustart benötigt die App präzisen Standortzugriff sowie die Berechtigung „Immer zulassen“. Öffne die App-Berechtigungen und aktiviere Standortzugriff jederzeit.",
+                    color = MatrixText
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showBackgroundLocationHelp = false
+                    openAppLocationSettings()
+                }) { Text("Einstellungen öffnen") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackgroundLocationHelp = false }) { Text("Abbrechen") }
+            }
+        )
     }
 }
 
@@ -950,18 +1025,16 @@ private fun WorkSettingsCard(
 
             MatrixTextField(
                 value = targetText,
-                label = "Sollzeit pro Arbeitstag in Minuten",
+                label = "Sollzeit pro Arbeitstag in Stunden (z. B. 8 oder 7,5)",
                 onValueChange = {
-                    onTargetTextChange(
-                        it.filter { char -> char.isDigit() }
-                            .take(4)
-                    )
-                }
+                    onTargetTextChange(WorkScheduleCalculator.sanitizeHoursInput(it))
+                },
+                keyboardType = KeyboardType.Decimal
             )
 
             MatrixTextField(
                 value = breakText,
-                label = "Standardpause in Minuten",
+                label = "Pausen-Richtwert in Minuten (kein automatischer Abzug)",
                 onValueChange = {
                     onBreakTextChange(
                         it.filter { char -> char.isDigit() }
@@ -1230,7 +1303,7 @@ private fun DayOverrideSettingsCard(
     }
 
     private fun buildDailyCsv(dailySummaries: List<DailySummary>): String {
-        val header = listOf("Datum", "Wochentag", "StartErsterBlock", "EndeLetzterBlock", "BruttoMinuten", "PauseMinuten", "NettoMinuten", "SollMinuten", "SaldoMinuten", "AnzahlBloecke", "Sondertag", "Kommentar")
+        val header = listOf("Datum", "Wochentag", "StartErsterBlock", "EndeLetzterBlock", "BruttoMinuten", "PauseMinuten", "NettoMinuten", "GutschriftMinuten", "SollMinuten", "SaldoMinuten", "AnzahlBloecke", "Sondertag", "Kommentar")
         val lines = mutableListOf(header.joinToString(";") { csvQuote(it) })
         dailySummaries.forEach { day ->
             val row = listOf(
@@ -1241,6 +1314,7 @@ private fun DayOverrideSettingsCard(
                 day.grossMinutes.toString(),
                 day.breakMinutes.toString(),
                 day.netMinutes.toString(),
+                day.creditedMinutes.toString(),
                 day.targetMinutes.toString(),
                 day.balanceMinutes.toString(),
                 day.entries.size.toString(),
@@ -1255,11 +1329,11 @@ private fun DayOverrideSettingsCard(
     private fun csvQuote(value: String): String = "\"" + value.replace("\"", "\"\"") + "\""
 
     private fun saveWorkSettings(dao: WorkTimeDao, settings: SettingsEntity, targetText: String, breakText: String, dayCloseText: String, onMessage: (String) -> Unit) {
-        val target = targetText.toIntOrNull()
+        val target = WorkScheduleCalculator.parseHoursToMinutes(targetText)
         val pause = breakText.toIntOrNull()
         val closeIsValid = runCatching { java.time.LocalTime.parse(dayCloseText) }.isSuccess
         when {
-            target == null || target !in 0..1440 -> onMessage("Sollzeit muss zwischen 0 und 1440 Minuten liegen")
+            target == null || target !in 0..1440 -> onMessage("Sollzeit muss zwischen 0 und 24 Stunden liegen")
             pause == null || pause !in 0..1440 -> onMessage("Pause muss zwischen 0 und 1440 Minuten liegen")
             !closeIsValid -> onMessage("Tagesabschluss muss im Format HH:mm sein")
             else -> CoroutineScope(Dispatchers.IO).launch {
@@ -1304,10 +1378,15 @@ private fun DayOverrideSettingsCard(
     private fun saveRadius(dao: WorkTimeDao, settings: SettingsEntity, radiusText: String, onMessage: (String) -> Unit) {
         val radius = radiusText.toIntOrNull()
         if (radius == null || radius !in 25..1000) { onMessage("Radius muss zwischen 25 und 1000 Metern liegen"); return }
-        CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceRadiusMeters = radius.toFloat())); runOnUiThread { onMessage("Radius gespeichert") } }
+        setGeofenceDesiredEnabled(false)
+        writeGeofenceStatus(false, null)
+        runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
+        CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceRadiusMeters = radius.toFloat())); runOnUiThread { onMessage("Radius gespeichert. Geofence bitte erneut registrieren.") } }
     }
 
     private fun saveMarkerFromMap(dao: WorkTimeDao, settings: SettingsEntity, point: GeoPoint, onMessage: (String) -> Unit) {
+        setGeofenceDesiredEnabled(false)
+        runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
         CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceLatitude = point.latitude, geofenceLongitude = point.longitude)); writeGeofenceStatus(false, null); runOnUiThread { onMessage("Arbeitsplatz-Marker aus Karte gespeichert. Geofence bitte erneut registrieren.") } }
     }
 
@@ -1317,6 +1396,8 @@ private fun DayOverrideSettingsCard(
         if (radius == null || radius !in 25..1000) { onMessage("Radius muss zwischen 25 und 1000 Metern liegen"); return }
         client.lastLocation.addOnSuccessListener { loc ->
             if (loc == null) { onMessage("Keine letzte Position verfuegbar. Standort kurz aktivieren und erneut versuchen."); return@addOnSuccessListener }
+            setGeofenceDesiredEnabled(false)
+            runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
             CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceLatitude = loc.latitude, geofenceLongitude = loc.longitude, geofenceRadiusMeters = radius.toFloat())); writeGeofenceStatus(false, null); runOnUiThread { onMessage("Arbeitsplatz-Koordinate gespeichert. Geofence bitte erneut registrieren.") } }
         }.addOnFailureListener { onMessage("Position konnte nicht gelesen werden: ${it.message}") }
     }
@@ -1328,16 +1409,31 @@ private fun DayOverrideSettingsCard(
         val periodDates = periodDates(today, view)
         val groupedEntries = entries.groupBy { Instant.ofEpochMilli(it.startEpochMillis).atZone(zoneId).toLocalDate() }
         val allDates = (periodDates + groupedEntries.keys).filter { isDateInView(it, today, view) }.distinct().sortedDescending()
-        return allDates.mapNotNull { date ->
+        val scheduledDays = selectedWorkdays(workdaySettings)
+        return allDates.map { date ->
             val dayEntries = groupedEntries[date].orEmpty().sortedBy { it.startEpochMillis }
             val override = overrideMap[date.toString()]
-            val target = targetForDate(settings.targetMinutesPerDay, workdaySettings, override, date)
-            val showDay = dayEntries.isNotEmpty() || override != null
-            if (!showDay) return@mapNotNull null
+            val dayTarget = WorkScheduleCalculator.targetForDate(
+                dailyTargetMinutes = settings.targetMinutesPerDay,
+                scheduledDays = scheduledDays,
+                date = date,
+                overrideType = override?.type
+            )
             val gross = dayEntries.sumOf { ((it.endEpochMillis - it.startEpochMillis) / 60000L).toInt().coerceAtLeast(0) }
             val pause = dayEntries.sumOf { entry -> entry.breakMinutes.coerceIn(0, ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)) }
             val net = gross - pause
-            DailySummary(date, override, dayEntries, gross, pause, net, target, net - target)
+            DailySummary(
+                date = date,
+                dayOverride = override,
+                entries = dayEntries,
+                grossMinutes = gross,
+                breakMinutes = pause,
+                netMinutes = net,
+                creditedMinutes = dayTarget.creditedMinutes,
+                isScheduledWorkday = dayTarget.isScheduledWorkday,
+                targetMinutes = dayTarget.targetMinutes,
+                balanceMinutes = net + dayTarget.creditedMinutes - dayTarget.targetMinutes
+            )
         }
     }
 
@@ -1361,19 +1457,14 @@ private fun DayOverrideSettingsCard(
         }
     }
 
-    private fun targetForDate(targetMinutesPerDay: Int, workdays: WorkdaySettings, override: DayOverride?, date: LocalDate): Int {
-        if (override != null) return 0
-        return if (isRegularWorkday(workdays, date.dayOfWeek)) targetMinutesPerDay else 0
-    }
-
-    private fun isRegularWorkday(workdays: WorkdaySettings, dayOfWeek: DayOfWeek): Boolean = when (dayOfWeek) {
-        DayOfWeek.MONDAY -> workdays.monday
-        DayOfWeek.TUESDAY -> workdays.tuesday
-        DayOfWeek.WEDNESDAY -> workdays.wednesday
-        DayOfWeek.THURSDAY -> workdays.thursday
-        DayOfWeek.FRIDAY -> workdays.friday
-        DayOfWeek.SATURDAY -> workdays.saturday
-        DayOfWeek.SUNDAY -> workdays.sunday
+    private fun selectedWorkdays(workdays: WorkdaySettings): Set<DayOfWeek> = buildSet {
+        if (workdays.monday) add(DayOfWeek.MONDAY)
+        if (workdays.tuesday) add(DayOfWeek.TUESDAY)
+        if (workdays.wednesday) add(DayOfWeek.WEDNESDAY)
+        if (workdays.thursday) add(DayOfWeek.THURSDAY)
+        if (workdays.friday) add(DayOfWeek.FRIDAY)
+        if (workdays.saturday) add(DayOfWeek.SATURDAY)
+        if (workdays.sunday) add(DayOfWeek.SUNDAY)
     }
 
     private fun calculatePeriodSummary(days: List<DailySummary>): PeriodSummary = PeriodSummary(
@@ -1383,13 +1474,43 @@ private fun DayOverrideSettingsCard(
         grossMinutes = days.sumOf { it.grossMinutes },
         breakMinutes = days.sumOf { it.breakMinutes },
         netMinutes = days.sumOf { it.netMinutes },
+        creditedMinutes = days.sumOf { it.creditedMinutes },
+        paidAbsenceDayCount = days.count { it.creditedMinutes > 0 },
         targetMinutes = days.sumOf { it.targetMinutes },
         balanceMinutes = days.sumOf { it.balanceMinutes }
     )
 
     private fun readGeofenceRegistered(): Boolean = getSharedPreferences("geofence_state", MODE_PRIVATE).getBoolean("registered", false)
     private fun readGeofenceRegisteredAt(): Long? = getSharedPreferences("geofence_state", MODE_PRIVATE).getLong("registeredAt", 0L).takeIf { it > 0L }
-    private fun writeGeofenceStatus(registered: Boolean, registeredAt: Long?) { getSharedPreferences("geofence_state", MODE_PRIVATE).edit().putBoolean("registered", registered).putLong("registeredAt", registeredAt ?: 0L).apply() }
+    private fun readGeofenceDesiredEnabled(): Boolean {
+        val preferences = getSharedPreferences("geofence_state", MODE_PRIVATE)
+        return preferences.getBoolean("enabled", preferences.getBoolean("registered", false))
+    }
+
+    private fun writeGeofenceStatus(registered: Boolean, registeredAt: Long?, updateDesired: Boolean = true) {
+        val editor = getSharedPreferences("geofence_state", MODE_PRIVATE).edit()
+            .putBoolean("registered", registered)
+            .putLong("registeredAt", registeredAt ?: 0L)
+        if (updateDesired) editor.putBoolean("enabled", registered)
+        editor.apply()
+    }
+
+    private fun setGeofenceDesiredEnabled(enabled: Boolean) {
+        getSharedPreferences("geofence_state", MODE_PRIVATE).edit()
+            .putBoolean("enabled", enabled)
+            .apply()
+    }
+
+    private fun hasRequiredGeofencePermissions(): Boolean =
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+    private fun openAppLocationSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", packageName, null)
+        }
+        startActivity(intent)
+    }
 
     private fun readWorkdaySettings(): WorkdaySettings {
         val prefs = getSharedPreferences("planning_state", MODE_PRIVATE)
@@ -1431,6 +1552,7 @@ private fun DayOverrideSettingsCard(
 
     private fun clearLocalPlanningSettings() {
         getSharedPreferences("planning_state", MODE_PRIVATE).edit().clear().apply()
+        runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
         writeGeofenceStatus(false, null)
     }
 
