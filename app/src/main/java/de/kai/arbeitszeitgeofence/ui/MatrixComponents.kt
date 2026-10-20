@@ -11,26 +11,32 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun MatrixCard(
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MatrixSurface
         ),
         border = BorderStroke(
             1.dp,
-            MatrixGreen.copy(alpha = 0.35f)
+            MatrixOutline
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 8.dp
         )
@@ -46,32 +52,49 @@ fun MatrixCard(
 @Composable
 fun MatrixButton(
     text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    emphasized: Boolean = false,
     onClick: () -> Unit
 ) {
     Button(
+        modifier = modifier,
         onClick = onClick,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MatrixSurface,
-            contentColor = MatrixGreen
+            containerColor = if (emphasized) MatrixGreen else MatrixButton,
+            contentColor = if (emphasized) MatrixBackground else MatrixText
         ),
         border = BorderStroke(
             1.dp,
-            MatrixGreen.copy(alpha = 0.50f)
+            if (emphasized) MatrixGreen else MatrixOutline
         ),
         elevation = ButtonDefaults.buttonElevation(
             defaultElevation = 1.dp,
             pressedElevation = 4.dp
         ),
         contentPadding = PaddingValues(
-            horizontal = 18.dp,
-            vertical = 12.dp
+            horizontal = 16.dp,
+            vertical = 11.dp
         )
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontSize = 14.sp
+            )
+        }
     }
 }
 

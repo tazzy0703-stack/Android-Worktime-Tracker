@@ -1,11 +1,12 @@
 package de.kai.arbeitszeitgeofence.ui
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
@@ -14,24 +15,22 @@ fun MatrixNumberField(
     label: String,
     onValueChange: (String) -> Unit
 ) {
-
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = {
-            Text(
-                label,
-                color = Color.White
-            )
-        },
-        colors = TextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            focusedContainerColor = MatrixSurface,
-            unfocusedContainerColor = MatrixSurface
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(text = label) },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = MatrixText,
+            unfocusedTextColor = MatrixText,
+            focusedLabelColor = MatrixGreen,
+            unfocusedLabelColor = MatrixMutedText,
+            focusedBorderColor = MatrixGreen,
+            unfocusedBorderColor = MatrixOutline,
+            cursorColor = MatrixGreen,
+            focusedContainerColor = MatrixInput,
+            unfocusedContainerColor = MatrixInput
         ),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Number
-        )
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
     )
 }
