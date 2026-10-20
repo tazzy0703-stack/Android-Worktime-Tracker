@@ -1,164 +1,61 @@
 # Arbeitszeit Geofence
 
-Private Android-App zur automatischen Arbeitszeiterfassung per Arbeitsplatz-Geofence.
+Private Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence.
 
-Die App erkennt über einen konfigurierbaren Geofence, ob sich das Gerät im definierten Arbeitsbereich befindet. Beim Betreten des Bereichs kann die Arbeitszeit automatisch gestartet und beim Verlassen automatisch beendet werden. Zusätzlich stehen manuelle Funktionen, Auswertungen, Korrekturmöglichkeiten und eine Kartenansicht zur Verfügung.
-
-> Status: Stabiler Privat-Release  
-> Version: `1.0.0`  
-> Plattform: Android  
-> Distribution: GitHub Releases (APK)  
-> Play Store: aktuell nicht geplant
-
----
+> **Letzter veröffentlichter Release:** [`v1.5.0`](https://github.com/tazzy0703-stack/Android-Worktime-Tracker/releases/tag/v1.5.0)
+> **Plattform:** Android 14 oder neuer (minSdk 34)
+> **Distribution:** APK über GitHub Releases
+> **Status:** Änderungen auf `main` werden vor einem nächsten Release im Alltag getestet.
 
 ## Funktionen
 
-### Arbeitszeiterfassung
-
--   Automatischer Start per Geofence ENTER
--   Automatischer Stop per Geofence EXIT
--   Manuelles Starten und Stoppen
--   Manuelle Pausenverwaltung
--   Permanente Android-Benachrichtigung während aktiver Zeiterfassung
--   Tagesabschluss manuell oder automatisch
-
-### Auswertung
-
--   Tagesansicht
--   Wochenansicht
--   Monatsansicht
--   Jahresansicht
--   Arbeitszeit-Salden
--   Detailansicht einzelner Arbeitstage
--   Bearbeitung bestehender Einträge
--   Löschen einzelner Einträge
--   CSV-Export von Auswertungen
-
-### Planung
-
--   Konfigurierbare Soll-Arbeitszeit
--   Standard-Pausenzeit
--   Individuelle Arbeitstage
--   Sondertage (Urlaub, Feiertag, Krank, Frei)
-
-### Standort
-
--   Arbeitsplatzverwaltung über OpenStreetMap
--   Kartenansicht mit osmdroid
--   Konfigurierbarer Geofence-Radius
--   Registrierung und Entfernung von Geofences
-
----
+- Arbeitszeit automatisch beim Betreten und Verlassen eines konfigurierbaren Arbeitsplatz-Geofence starten bzw. beenden
+- Manuelles Starten, Stoppen und Erfassen von Pausen; dauerhafte Statusbenachrichtigung
+- Manueller und automatischer Tagesabschluss
+- Tages-, Wochen-, Monats- und Jahresauswertung mit Sollzeit, Nettozeit, Gutschrift und Saldo
+- Tagessoll in Stunden eingeben; individuelle Arbeitstage bestimmen Wochen- und Periodensoll
+- Urlaub, Feiertag und Krankheit werden an geplanten Arbeitstagen mit Sollzeit gutgeschrieben; „Frei“ erzeugt keine Gutschrift
+- Pausen werden nur manuell erfasst und abgezogen; der Pausen-Richtwert wird nicht automatisch verwendet
+- Arbeitszeiteinträge bearbeiten, löschen und als CSV exportieren
+- Arbeitsplatz auf einer OpenStreetMap-Karte festlegen und Geofence-Radius konfigurieren
+- Geofence-Wiederherstellung nach Geräte-Neustart und App-Update
 
 ## Screenshots
 
 ### Dashboard
 
-<img width="360" height="728" alt="dashboard" src="https://github.com/tazzy0703-stack/Android-Worktime-Tracker/blob/main/docs/images/dashboard.png" />
+<img width="360" alt="Dashboard" src="screenshots/dashboard.png" />
 
 ### Zeiterfassung
 
-<img width="360" height="728" alt="times" src="https://github.com/tazzy0703-stack/Android-Worktime-Tracker/blob/main/docs/images/times.png" />
+<img width="360" alt="Zeiterfassung" src="screenshots/times.png" />
 
 ### Einstellungen
 
-<img width="360" height="728" alt="settings" src="https://github.com/tazzy0703-stack/Android-Worktime-Tracker/blob/main/docs/images/settings.png" />
-
----
+<img width="360" alt="Einstellungen" src="screenshots/settings.png" />
 
 ## Installation
 
-Die aktuelle APK steht über die GitHub Releases zur Verfügung.
+Die APK des letzten veröffentlichten Releases findest du unter [GitHub Releases](https://github.com/tazzy0703-stack/Android-Worktime-Tracker/releases). Lade das APK-Asset herunter und installiere es auf dem Smartphone. Android kann die einmalige Freigabe zur Installation aus dieser Quelle verlangen.
 
-### APK herunterladen
+Für automatische Geofence-Erkennung müssen Standortdienste und präziser Standort aktiviert sein. Stelle in den Android-App-Berechtigungen den Standortzugriff auf **„Immer zulassen“** und erlaube Benachrichtigungen. Lege anschließend Arbeitsplatz und Radius fest und registriere den Geofence in der App. Android und herstellerspezifische Akku-Optimierungen können Hintergrundereignisse verzögern; eine sekundengenaue Erkennung ist nicht garantiert.
 
-```text
-GitHub
-→ Releases
-→ Latest Release
-→ app-release.apk
-```
+## Build über GitHub Actions
 
-### Installation
+Der Workflow **Android APK** startet bei Pushes auf `main` und kann auch manuell ausgeführt werden. Er führt die Unit-Tests aus und stellt eine Debug-APK (`app-debug.apk`) als Actions-Artifact bereit. Die signierte Release-APK (`app-release.apk`) wird nur erstellt, wenn die Repository-Secrets für die Android-Release-Signierung eingerichtet sind. Eine Debug-APK ist für Tests und nicht als reguläres Update gedacht.
 
-```text
-1. APK herunterladen
-2. Installation aus unbekannten Quellen erlauben
-3. APK installieren
-4. Standortberechtigungen freigeben
-```
-
----
+Für einen manuellen Lauf: Repository → **Actions** → **Android APK** → **Run workflow** → Branch auswählen → **Run workflow**. Nach erfolgreichem Lauf das gewünschte APK aus **Artifacts** herunterladen.
 
 ## Technische Basis
 
--   Kotlin
--   Jetpack Compose
--   Room Database
--   Google Geofencing API
--   Android Foreground Services
--   OpenStreetMap / osmdroid
+Kotlin, Jetpack Compose, Room, Google Play Services Geofencing, Android Foreground Service, WorkManager und OpenStreetMap/osmdroid.
 
----
+## Datenschutz und Nutzung
 
-## Dokumentation
-
-Weitere Unterlagen befinden sich im Verzeichnis `docs`.
-
-### Projektunterlagen
-
--   [docs/CHANGELOG.md](docs/CHANGELOG.md)
--   [docs/INSTALLATION.md](docs/INSTALLATION.md)
--   [docs/PERMISSIONS.md](docs/PERMISSIONS.md)
--   [docs/PRIVACY_NOTES.md](docs/PRIVACY_NOTES.md)
--   [docs/RELEASE_PROCESS.md](docs/RELEASE_PROCESS.md)
--   [docs/ROADMAP.md](docs/ROADMAP.md)
--   [docs/TESTPLAN.md](docs/TESTPLAN.md)
-
-### Design
-
--   [design/MATRIX_THEME.md](design/MATRIX_THEME.md)
-
----
-
-## Datenschutz
-
-Die Anwendung arbeitet vollständig lokal auf dem Gerät.
-
--   Keine Cloud-Anbindung
--   Keine Benutzerkonten
--   Keine Telemetrie
--   Keine Datenübertragung an externe Dienste
--   Arbeitszeitdaten verbleiben auf dem Gerät
-
-Weitere Informationen sind in den Datenschutz-Hinweisen dokumentiert.
-
----
-
-## Projektstatus
-
-Version 1.0 stellt einen funktionsfähigen und stabilen Stand für die private Nutzung bereit.
-
-Enthalten sind:
-
--   Geofence-basierte Arbeitszeiterfassung
--   Dashboard
--   Arbeitszeitauswertung
--   CSV-Export
--   Sondertage
--   Kartenintegration
--   Matrix-UI
-
----
-
-## Lizenz / Nutzung
-
-Private Software.
+Arbeitszeit- und Planungseinträge werden lokal auf dem Gerät gespeichert. Für die Kartenansicht werden OpenStreetMap-Kacheln über das Internet geladen. Die App ist privat und wird ohne Open-Source-Lizenz veröffentlicht.
 
 ```text
 Copyright (c) 2026 Kai Becker.
 All rights reserved.
+Source code is private and not licensed for redistribution or public use.
 ```
-
-Dieses Projekt wird ohne Open-Source-Lizenz veröffentlicht. Nutzung, Weitergabe und Änderungen bedürfen der Zustimmung des Rechteinhabers.
