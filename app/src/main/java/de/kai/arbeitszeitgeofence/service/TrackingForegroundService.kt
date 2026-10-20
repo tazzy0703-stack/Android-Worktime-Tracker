@@ -1,5 +1,6 @@
 package de.kai.arbeitszeitgeofence.service
 
+import android.app.ForegroundServiceStartNotAllowedException
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,25 +11,40 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import androidx.room.withTransaction
 import de.kai.arbeitszeitgeofence.ArbeitszeitApp
 import de.kai.arbeitszeitgeofence.MainActivity
 import de.kai.arbeitszeitgeofence.R
 import de.kai.arbeitszeitgeofence.data.ActiveStateEntity
 import de.kai.arbeitszeitgeofence.domain.TrackingSource
 import de.kai.arbeitszeitgeofence.domain.WorkSessionManager
+import de.kai.arbeitszeitgeofence.geofence.GeofenceStateStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 import java.time.LocalDate
 
 class TrackingForegroundService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    // Alle Aktionen laufen nacheinander, damit sich Read-Modify-Write auf active_state nicht überholt.
+    private val actionMutex = Mutex()
+
+    @Volatile
+    private var latestStartId = 0
+
+    @Volatile
+    private var isForeground = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -38,17 +54,27 @@ class TrackingForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        latestStartId = startId
         val action = intent?.action ?: ACTION_REFRESH
 
-        ServiceCompat.startForeground(
-            this,
-            NOTIFICATION_ID,
-            buildNotification(null),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-        )
+        enterForeground()
 
         serviceScope.launch {
-            executeAction(action)
+            actionMutex.withLock {
+                try {
+                    executeAction(action, startId)
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    Log.e(TAG, "Action $action failed", exception)
+                    finish(startId)
+                }
+
+                // Ohne Foreground-Status darf der Service nicht weiterlaufen (sonst ForegroundServiceDidNotStartInTime).
+                if (!isForeground) {
+                    stopSelf(startId)
+                }
+            }
         }
 
         return START_STICKY
@@ -59,7 +85,38 @@ class TrackingForegroundService : Service() {
         super.onDestroy()
     }
 
-    private suspend fun executeAction(action: String) {
+    /**
+     * Der Typ "location" erfordert eine Standortberechtigung und ist aus dem Hintergrund nur mit
+     * ACCESS_BACKGROUND_LOCATION erlaubt. Schlägt das fehl, wird die Aktion trotzdem verarbeitet
+     * (die Zustände liegen in der Datenbank), der Service beendet sich danach selbst.
+     */
+    private fun enterForeground() {
+        isForeground = try {
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                buildNotification(null),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            )
+            true
+        } catch (exception: SecurityException) {
+            Log.e(TAG, "startForeground rejected (missing location permission?)", exception)
+            false
+        } catch (exception: ForegroundServiceStartNotAllowedException) {
+            Log.e(TAG, "startForeground not allowed from background", exception)
+            false
+        }
+    }
+
+    /** Beendet den Service nur, wenn danach kein neuerer Start-Befehl wartet. */
+    private fun finish(startId: Int) {
+        if (startId == latestStartId) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
+        stopSelf(startId)
+    }
+
+    private suspend fun executeAction(action: String, startId: Int) {
         val app = applicationContext as ArbeitszeitApp
         val dao = app.database.workTimeDao()
         val now = Instant.now()
@@ -68,6 +125,7 @@ class TrackingForegroundService : Service() {
 
         when (action) {
             ACTION_START -> {
+                GeofenceStateStore.setSuppressAutoStart(this, false)
                 val newState = WorkSessionManager.startWork(
                     state = currentState,
                     now = now,
@@ -78,26 +136,40 @@ class TrackingForegroundService : Service() {
             }
 
             ACTION_GEOFENCE_ENTER -> {
+                GeofenceStateStore.setSuppressAutoStart(this, false)
                 val enteredState = currentState.copy(insideGeofence = true)
-                val newState = WorkSessionManager.startWork(
-                    state = enteredState,
-                    now = now,
-                    insideGeofence = true
-                )
-                dao.upsertActiveState(newState)
+
+                // Kurz raus und wieder rein (GPS-Jitter, kurzer Gang): letzten Geofence-Block fortsetzen.
+                val resumeCandidate = if (enteredState.isTracking) null else dao.getLastEntry()
+                val newState = if (resumeCandidate != null && WorkSessionManager.canResume(resumeCandidate, now)) {
+                    val resumedState = WorkSessionManager.resumeFromEntry(enteredState, resumeCandidate)
+                    app.database.withTransaction {
+                        dao.deleteEntry(resumeCandidate.id)
+                        dao.upsertActiveState(resumedState)
+                    }
+                    resumedState
+                } else {
+                    val startedState = WorkSessionManager.startWork(
+                        state = enteredState,
+                        now = now,
+                        insideGeofence = true
+                    )
+                    dao.upsertActiveState(startedState)
+                    startedState
+                }
                 showNotification(newState)
             }
 
             ACTION_PAUSE_START -> {
                 val newState = WorkSessionManager.startBreak(currentState, now)
                 dao.upsertActiveState(newState)
-                showNotification(newState)
+                if (newState.isTracking) showNotification(newState) else finish(startId)
             }
 
             ACTION_PAUSE_STOP -> {
                 val newState = WorkSessionManager.stopBreak(currentState, now)
                 dao.upsertActiveState(newState)
-                showNotification(newState)
+                if (newState.isTracking) showNotification(newState) else finish(startId)
             }
 
             ACTION_STOP -> {
@@ -106,7 +178,8 @@ class TrackingForegroundService : Service() {
                     now = now,
                     source = TrackingSource.Manual,
                     comment = "Manuell per Benachrichtigung gestoppt",
-                    markDayClosed = false
+                    markDayClosed = false,
+                    startId = startId
                 )
             }
 
@@ -115,7 +188,8 @@ class TrackingForegroundService : Service() {
                     state = currentState,
                     now = now,
                     today = today,
-                    comment = "Manueller Tagesabschluss"
+                    comment = "Manueller Tagesabschluss",
+                    startId = startId
                 )
             }
 
@@ -124,11 +198,13 @@ class TrackingForegroundService : Service() {
                     state = currentState,
                     now = now,
                     today = today,
-                    comment = "Automatischer Tagesabschluss"
+                    comment = "Automatischer Tagesabschluss",
+                    startId = startId
                 )
             }
 
             ACTION_GEOFENCE_EXIT -> {
+                GeofenceStateStore.setSuppressAutoStart(this, false)
                 val exitedState = currentState.copy(insideGeofence = false)
 
                 if (exitedState.isTracking) {
@@ -137,12 +213,12 @@ class TrackingForegroundService : Service() {
                         now = now,
                         source = TrackingSource.Geofence,
                         comment = "Arbeitsbereich verlassen - Arbeitszeit automatisch angehalten",
-                        markDayClosed = false
+                        markDayClosed = false,
+                        startId = startId
                     )
                 } else {
                     dao.upsertActiveState(exitedState)
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
+                    finish(startId)
                 }
             }
 
@@ -150,8 +226,7 @@ class TrackingForegroundService : Service() {
                 if (currentState.isTracking) {
                     showNotification(currentState)
                 } else {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
+                    finish(startId)
                 }
             }
         }
@@ -161,15 +236,13 @@ class TrackingForegroundService : Service() {
         state: ActiveStateEntity,
         now: Instant,
         today: LocalDate,
-        comment: String
+        comment: String,
+        startId: Int
     ) {
-        val app = applicationContext as ArbeitszeitApp
-        val dao = app.database.workTimeDao()
         val todayString = today.toString()
 
         if (state.closedLocalDate == todayString) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
+            finish(startId)
             return
         }
 
@@ -178,7 +251,8 @@ class TrackingForegroundService : Service() {
             now = now,
             source = TrackingSource.DayClose,
             comment = comment,
-            markDayClosed = true
+            markDayClosed = true,
+            startId = startId
         )
     }
 
@@ -187,7 +261,8 @@ class TrackingForegroundService : Service() {
         now: Instant,
         source: TrackingSource,
         comment: String,
-        markDayClosed: Boolean
+        markDayClosed: Boolean,
+        startId: Int
     ) {
         val app = applicationContext as ArbeitszeitApp
         val dao = app.database.workTimeDao()
@@ -204,19 +279,26 @@ class TrackingForegroundService : Service() {
         val stoppedState = stopResult.first
         val entry = stopResult.second
 
-        if (entry != null) {
-            dao.insertEntry(entry)
-        }
-
         val finalState = if (markDayClosed) {
             stoppedState.copy(closedLocalDate = todayString)
         } else {
             stoppedState
         }
 
-        dao.upsertActiveState(finalState)
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        // Eintrag und Zustand gemeinsam schreiben, damit bei einem Abbruch kein halber Stand entsteht.
+        app.database.withTransaction {
+            if (entry != null) {
+                dao.insertEntry(entry)
+            }
+            dao.upsertActiveState(finalState)
+        }
+
+        // Bewusstes Beenden am Arbeitsplatz darf nicht durch den Anwesenheitsabgleich überschrieben werden.
+        if (source != TrackingSource.Geofence) {
+            GeofenceStateStore.setSuppressAutoStart(this, true)
+        }
+
+        finish(startId)
     }
 
     private fun showNotification(state: ActiveStateEntity) {
@@ -230,7 +312,8 @@ class TrackingForegroundService : Service() {
         val isInsideGeofence = state?.insideGeofence == true
 
         val contentText = when {
-            !isTracking -> "Arbeitszeit wird gestartet"
+            state == null -> "Arbeitszeit wird aktualisiert"
+            !isTracking -> "Arbeitszeit angehalten"
             isBreakRunning -> "Pause laeuft - Arbeitszeit bleibt aktiv"
             isInsideGeofence -> "Arbeitszeit laeuft - Arbeitsplatz erkannt"
             else -> "Arbeitszeit laeuft"
@@ -296,6 +379,8 @@ class TrackingForegroundService : Service() {
     }
 
     companion object {
+        private const val TAG = "TrackingService"
+
         const val ACTION_START = "de.kai.arbeitszeitgeofence.action.START"
         const val ACTION_STOP = "de.kai.arbeitszeitgeofence.action.STOP"
         const val ACTION_PAUSE_START = "de.kai.arbeitszeitgeofence.action.PAUSE_START"

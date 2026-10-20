@@ -53,11 +53,13 @@ class GeofenceRestoreReceiver : BroadcastReceiver() {
                     .addOnCompleteListener { task ->
                         if (!task.isSuccessful) {
                             Log.e(TAG, "Geofence restore failed", task.exception)
+                            GeofenceRestoreWorker.enqueue(appContext)
                         }
                         complete(task.isSuccessful)
                     }
             } catch (exception: Exception) {
                 Log.e(TAG, "Unable to restore geofence", exception)
+                GeofenceRestoreWorker.enqueue(appContext)
                 complete(false)
             }
         }

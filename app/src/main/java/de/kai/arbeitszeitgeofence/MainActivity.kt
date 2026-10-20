@@ -8,6 +8,16 @@ import de.kai.arbeitszeitgeofence.ui.HeroStatusCard
 import de.kai.arbeitszeitgeofence.ui.DashboardKpiCard
 import android.Manifest
 import android.annotation.SuppressLint
+import android.location.Location
+import android.widget.Toast
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.gms.location.CurrentLocationRequest
+import com.google.android.gms.location.Priority
+import de.kai.arbeitszeitgeofence.geofence.GeofenceRestoreWorker
+import de.kai.arbeitszeitgeofence.geofence.GeofenceStateStore
+import kotlinx.coroutines.withContext
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -119,6 +129,8 @@ private data class DailySummary(
     val creditedMinutes: Int,
     val isScheduledWorkday: Boolean,
     val targetMinutes: Int,
+    val plannedTargetMinutes: Int,
+    val isFuture: Boolean,
     val balanceMinutes: Int
 )
 private data class PeriodSummary(
@@ -136,8 +148,16 @@ private data class PeriodSummary(
 
 private val entryDateTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
+// Anwesenheitsabgleich beim App-Start: nur auswerten, wenn die Position ausreichend genau ist.
+private const val PRESENCE_MAX_ACCURACY_METERS = 100f
+// Arbeitsplatz speichern: ab dieser Ungenauigkeit abbrechen bzw. warnen.
+private const val WORKPLACE_MAX_ACCURACY_METERS = 100f
+private const val WORKPLACE_WARN_ACCURACY_METERS = 50f
+
 class MainActivity : ComponentActivity() {
     private var pendingCsvExport: String? = null
+    private var geofenceRegistered by mutableStateOf(false)
+    private var geofenceRegisteredAt by mutableStateOf<Long?>(null)
 
     private val createCsvDocumentLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         val csvContent = pendingCsvExport
@@ -162,6 +182,17 @@ class MainActivity : ComponentActivity() {
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         val geofenceManager = GeofenceManager(this)
 
+        geofenceRegistered = readGeofenceRegistered()
+        geofenceRegisteredAt = readGeofenceRegisteredAt()
+
+        // Play Services meldet nur Uebergaenge (ENTER/EXIT), nicht "bin schon drin". Beim Oeffnen der App
+        // wird deshalb die echte Position geprueft und die Zeit ggf. gestartet.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                reconcilePresence(fusedLocationClient, dao)
+            }
+        }
+
         setContent {
             MatrixTheme {
                 val entries by dao.observeEntries().collectAsState(initial = emptyList())
@@ -173,8 +204,6 @@ class MainActivity : ComponentActivity() {
                 var targetText by remember { mutableStateOf("8") }
                 var defaultBreakText by remember { mutableStateOf("45") }
                 var dayCloseText by remember { mutableStateOf("23:59") }
-                var geofenceRegistered by remember { mutableStateOf(readGeofenceRegistered()) }
-                var geofenceRegisteredAt by remember { mutableStateOf(readGeofenceRegisteredAt()) }
                 var workdaySettings by remember { mutableStateOf(readWorkdaySettings()) }
                 var dayOverrides by remember { mutableStateOf(readDayOverrides()) }
 
@@ -183,7 +212,7 @@ class MainActivity : ComponentActivity() {
                     if (dao.getSettings() == null) dao.upsertSettings(SettingsEntity())
                     DayCloseWorker.scheduleNext(this@MainActivity)
 
-                    if (readGeofenceDesiredEnabled()) {
+                    if (readGeofenceDesiredEnabled() && !readGeofenceRegistered()) {
                         val savedSettings = dao.getSettings() ?: SettingsEntity()
                         val latitude = savedSettings.geofenceLatitude
                         val longitude = savedSettings.geofenceLongitude
@@ -501,6 +530,7 @@ item {
                         CoroutineScope(Dispatchers.IO).launch {
                             dao.deleteAllEntries()
                             dao.upsertActiveState(WorkSessionManager.initialState())
+                            stopService(Intent(this@MainActivity, TrackingForegroundService::class.java))
                             runOnUiThread { onMessage("Alle Eintraege geloescht"); confirmDeleteAll = false }
                         }
                     }) { Text("Loeschen") }
@@ -526,8 +556,11 @@ item {
                     Text("Bezahlte Gutschrift: ${formatMinutes(summary.creditedMinutes)}", color = MatrixText)
                 }
                 Text(
-    "Soll: ${formatMinutes(summary.targetMinutes)}"
-)
+                    if (summary.isFuture && summary.plannedTargetMinutes > 0)
+                        "Soll: ${formatMinutes(summary.plannedTargetMinutes)} (geplant, zaehlt ab dem Tag)"
+                    else
+                        "Soll: ${formatMinutes(summary.targetMinutes)}"
+                )
 
 Text(
     text = "Saldo: ${formatSignedMinutes(summary.balanceMinutes)}",
@@ -1279,6 +1312,7 @@ private fun DayOverrideSettingsCard(
                             dao.deleteAllEntries()
                             dao.upsertActiveState(WorkSessionManager.initialState())
                             dao.upsertSettings(SettingsEntity())
+                            stopService(Intent(this@MainActivity, TrackingForegroundService::class.java))
                             clearLocalPlanningSettings()
                             runOnUiThread {
                                 onDayOverridesChange(emptyList())
@@ -1378,28 +1412,126 @@ private fun DayOverrideSettingsCard(
     private fun saveRadius(dao: WorkTimeDao, settings: SettingsEntity, radiusText: String, onMessage: (String) -> Unit) {
         val radius = radiusText.toIntOrNull()
         if (radius == null || radius !in 25..1000) { onMessage("Radius muss zwischen 25 und 1000 Metern liegen"); return }
-        setGeofenceDesiredEnabled(false)
-        writeGeofenceStatus(false, null)
-        runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
-        CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceRadiusMeters = radius.toFloat())); runOnUiThread { onMessage("Radius gespeichert. Geofence bitte erneut registrieren.") } }
+        applyWorkplaceChange(dao, "Radius gespeichert", onMessage) { current -> current.copy(geofenceRadiusMeters = radius.toFloat()) }
     }
 
     private fun saveMarkerFromMap(dao: WorkTimeDao, settings: SettingsEntity, point: GeoPoint, onMessage: (String) -> Unit) {
-        setGeofenceDesiredEnabled(false)
-        runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
-        CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceLatitude = point.latitude, geofenceLongitude = point.longitude)); writeGeofenceStatus(false, null); runOnUiThread { onMessage("Arbeitsplatz-Marker aus Karte gespeichert. Geofence bitte erneut registrieren.") } }
+        applyWorkplaceChange(dao, "Arbeitsplatz-Marker aus Karte gespeichert", onMessage) { current ->
+            current.copy(geofenceLatitude = point.latitude, geofenceLongitude = point.longitude)
+        }
     }
 
     @SuppressLint("MissingPermission")
     private fun saveCurrentLocationAsWorkplace(client: FusedLocationProviderClient, dao: WorkTimeDao, settings: SettingsEntity, radiusText: String, onMessage: (String) -> Unit) {
         val radius = radiusText.toIntOrNull()
         if (radius == null || radius !in 25..1000) { onMessage("Radius muss zwischen 25 und 1000 Metern liegen"); return }
-        client.lastLocation.addOnSuccessListener { loc ->
-            if (loc == null) { onMessage("Keine letzte Position verfuegbar. Standort kurz aktivieren und erneut versuchen."); return@addOnSuccessListener }
-            setGeofenceDesiredEnabled(false)
-            runCatching { GeofenceManager(this).unregisterWorkplaceGeofence() }
-            CoroutineScope(Dispatchers.IO).launch { dao.upsertSettings(settings.copy(geofenceLatitude = loc.latitude, geofenceLongitude = loc.longitude, geofenceRadiusMeters = radius.toFloat())); writeGeofenceStatus(false, null); runOnUiThread { onMessage("Arbeitsplatz-Koordinate gespeichert. Geofence bitte erneut registrieren.") } }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            onMessage("Praeziser Standortzugriff fehlt. Bitte in den App-Berechtigungen erlauben.")
+            return
+        }
+
+        onMessage("Position wird ermittelt ...")
+        // Aktuelle Hochpraezisions-Position statt lastLocation (gecacht, evtl. alt oder ungenau).
+        val request = CurrentLocationRequest.Builder()
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .setMaxUpdateAgeMillis(0)
+            .setDurationMillis(20_000)
+            .build()
+        client.getCurrentLocation(request, null).addOnSuccessListener { loc ->
+            when {
+                loc == null -> onMessage("Keine Position ermittelt. Standort aktivieren, kurz am Fenster oder im Freien warten und erneut versuchen.")
+                loc.accuracy > WORKPLACE_MAX_ACCURACY_METERS -> onMessage("Position zu ungenau (+/- ${loc.accuracy.toInt()} m). Bitte kurz warten und erneut versuchen.")
+                else -> {
+                    val hint = if (loc.accuracy > WORKPLACE_WARN_ACCURACY_METERS) " (Genauigkeit +/- ${loc.accuracy.toInt()} m - Lage in der Karte pruefen)" else ""
+                    applyWorkplaceChange(dao, "Arbeitsplatz-Koordinate gespeichert$hint", onMessage) { current ->
+                        current.copy(geofenceLatitude = loc.latitude, geofenceLongitude = loc.longitude, geofenceRadiusMeters = radius.toFloat())
+                    }
+                }
+            }
         }.addOnFailureListener { onMessage("Position konnte nicht gelesen werden: ${it.message}") }
+    }
+
+    /**
+     * Speichert eine Aenderung an Arbeitsplatz/Radius auf dem aktuellen Datenbankstand (kein veralteter
+     * Compose-Stand) und registriert den Geofence danach automatisch neu, falls er vorher aktiv war.
+     */
+    private fun applyWorkplaceChange(
+        dao: WorkTimeDao,
+        successMessage: String,
+        onMessage: (String) -> Unit,
+        transform: (SettingsEntity) -> SettingsEntity
+    ) {
+        val wasEnabled = readGeofenceDesiredEnabled()
+        CoroutineScope(Dispatchers.IO).launch {
+            val updated = transform(dao.getSettings() ?: SettingsEntity())
+            dao.upsertSettings(updated)
+            runOnUiThread {
+                if (wasEnabled) {
+                    reregisterGeofence(updated, successMessage, onMessage)
+                } else {
+                    onMessage("$successMessage. Geofence ist nicht aktiv - bei Bedarf registrieren.")
+                }
+            }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun reregisterGeofence(settings: SettingsEntity, successMessage: String, onMessage: (String) -> Unit) {
+        val latitude = settings.geofenceLatitude
+        val longitude = settings.geofenceLongitude
+        if (latitude == null || longitude == null || !hasRequiredGeofencePermissions()) {
+            writeGeofenceStatus(false, null, updateDesired = false)
+            onMessage("$successMessage. Geofence konnte nicht neu registriert werden (Koordinate oder Berechtigung fehlt).")
+            return
+        }
+        runCatching {
+            GeofenceManager(this).registerWorkplaceGeofence(latitude, longitude, settings.geofenceRadiusMeters)
+                .addOnSuccessListener {
+                    writeGeofenceStatus(true, Instant.now().toEpochMilli(), updateDesired = false)
+                    onMessage("$successMessage. Geofence neu registriert.")
+                }
+                .addOnFailureListener { exception ->
+                    writeGeofenceStatus(false, null, updateDesired = false)
+                    GeofenceRestoreWorker.enqueue(this)
+                    onMessage("$successMessage. Neu-Registrierung fehlgeschlagen, wird wiederholt: ${exception.localizedMessage ?: "unbekannter Fehler"}")
+                }
+        }.onFailure { exception ->
+            writeGeofenceStatus(false, null, updateDesired = false)
+            onMessage("$successMessage. Neu-Registrierung fehlgeschlagen: ${exception.localizedMessage ?: "unbekannter Fehler"}")
+        }
+    }
+
+    /**
+     * Geofences melden nur Zustandswechsel. Ist man beim Start der App bereits am Arbeitsplatz und die
+     * Zeit laeuft nicht (z. B. ENTER verpasst), wird sie hier gestartet. Nicht, wenn bewusst gestoppt
+     * wurde (manueller Stop/Tagesabschluss) - dieses Flag wird erst bei EXIT/ENTER zurueckgesetzt.
+     */
+    @SuppressLint("MissingPermission")
+    private suspend fun reconcilePresence(client: FusedLocationProviderClient, dao: WorkTimeDao) {
+        if (!readGeofenceDesiredEnabled() || !hasRequiredGeofencePermissions()) return
+        if (GeofenceStateStore.isSuppressAutoStart(this)) return
+
+        val state = withContext(Dispatchers.IO) { dao.getActiveState() } ?: WorkSessionManager.initialState()
+        val settings = withContext(Dispatchers.IO) { dao.getSettings() } ?: return
+        val latitude = settings.geofenceLatitude ?: return
+        val longitude = settings.geofenceLongitude ?: return
+        if (state.isTracking || state.closedLocalDate == LocalDate.now().toString()) return
+
+        val request = CurrentLocationRequest.Builder()
+            .setPriority(Priority.PRIORITY_HIGH_ACCURACY)
+            .setMaxUpdateAgeMillis(30_000)
+            .setDurationMillis(15_000)
+            .build()
+        client.getCurrentLocation(request, null).addOnSuccessListener { location ->
+            if (location == null || location.accuracy > PRESENCE_MAX_ACCURACY_METERS) return@addOnSuccessListener
+            val distance = FloatArray(1)
+            Location.distanceBetween(latitude, longitude, location.latitude, location.longitude, distance)
+            if (distance[0] > settings.geofenceRadiusMeters) return@addOnSuccessListener
+            // Zwischenzeitlich bewusst gestoppt? Dann nicht neu starten.
+            if (GeofenceStateStore.isSuppressAutoStart(this)) return@addOnSuccessListener
+            TrackingForegroundService.start(this, TrackingForegroundService.ACTION_GEOFENCE_ENTER)
+            Toast.makeText(this, "Arbeitsplatz erkannt - Arbeitszeit gestartet", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun buildDailySummaries(entries: List<WorkTimeEntryEntity>, view: TimeView, settings: SettingsEntity, workdaySettings: WorkdaySettings, dayOverrides: List<DayOverride>): List<DailySummary> {
@@ -1422,6 +1554,10 @@ private fun DayOverrideSettingsCard(
             val gross = dayEntries.sumOf { ((it.endEpochMillis - it.startEpochMillis) / 60000L).toInt().coerceAtLeast(0) }
             val pause = dayEntries.sumOf { entry -> entry.breakMinutes.coerceIn(0, ((entry.endEpochMillis - entry.startEpochMillis) / 60000L).toInt().coerceAtLeast(0)) }
             val net = gross - pause
+            // Soll und Gutschrift zaehlen nur bis einschliesslich heute, damit erarbeitete Ueberstunden sichtbar werden.
+            val isFuture = date.isAfter(today)
+            val countedTarget = if (isFuture) 0 else dayTarget.targetMinutes
+            val countedCredit = if (isFuture) 0 else dayTarget.creditedMinutes
             DailySummary(
                 date = date,
                 dayOverride = override,
@@ -1429,10 +1565,12 @@ private fun DayOverrideSettingsCard(
                 grossMinutes = gross,
                 breakMinutes = pause,
                 netMinutes = net,
-                creditedMinutes = dayTarget.creditedMinutes,
+                creditedMinutes = countedCredit,
                 isScheduledWorkday = dayTarget.isScheduledWorkday,
-                targetMinutes = dayTarget.targetMinutes,
-                balanceMinutes = net + dayTarget.creditedMinutes - dayTarget.targetMinutes
+                targetMinutes = countedTarget,
+                plannedTargetMinutes = dayTarget.targetMinutes,
+                isFuture = isFuture,
+                balanceMinutes = net + countedCredit - countedTarget
             )
         }
     }
@@ -1469,7 +1607,7 @@ private fun DayOverrideSettingsCard(
 
     private fun calculatePeriodSummary(days: List<DailySummary>): PeriodSummary = PeriodSummary(
         dayCount = days.size,
-        regularWorkdayCount = days.count { it.targetMinutes > 0 },
+        regularWorkdayCount = days.count { it.plannedTargetMinutes > 0 },
         overrideCount = days.count { it.dayOverride != null },
         grossMinutes = days.sumOf { it.grossMinutes },
         breakMinutes = days.sumOf { it.breakMinutes },
@@ -1493,6 +1631,8 @@ private fun DayOverrideSettingsCard(
             .putLong("registeredAt", registeredAt ?: 0L)
         if (updateDesired) editor.putBoolean("enabled", registered)
         editor.apply()
+        geofenceRegistered = registered
+        geofenceRegisteredAt = registeredAt
     }
 
     private fun setGeofenceDesiredEnabled(enabled: Boolean) {

@@ -2,11 +2,15 @@ package de.kai.arbeitszeitgeofence.domain
 
 import de.kai.arbeitszeitgeofence.data.ActiveStateEntity
 import de.kai.arbeitszeitgeofence.data.WorkTimeEntryEntity
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 object WorkSessionManager {
+    /** Kehrt man innerhalb dieser Zeit nach einem Geofence-EXIT zurück, wird der letzte Block fortgesetzt. */
+    const val RESUME_WINDOW_MINUTES = 5L
+
     fun initialState(): ActiveStateEntity {
         return ActiveStateEntity(
             isTracking = false,
@@ -35,6 +39,36 @@ object WorkSessionManager {
             breakStartEpochMillis = null,
             accumulatedBreakMinutes = 0,
             insideGeofence = insideGeofence
+        )
+    }
+
+    /**
+     * Ein Eintrag darf fortgesetzt werden, wenn er durch ein Geofence-EXIT entstanden ist und
+     * dieses EXIT höchstens [windowMinutes] zurückliegt (fängt GPS-Jitter und kurze Gänge ab).
+     */
+    fun canResume(
+        lastEntry: WorkTimeEntryEntity?,
+        now: Instant,
+        windowMinutes: Long = RESUME_WINDOW_MINUTES
+    ): Boolean {
+        if (lastEntry == null || lastEntry.source != TrackingSource.Geofence.name) return false
+        val exitedAt = Instant.ofEpochMilli(lastEntry.endEpochMillis)
+        if (now.isBefore(exitedAt)) return false
+        return Duration.between(exitedAt, now) <= Duration.ofMinutes(windowMinutes)
+    }
+
+    /** Setzt den Zustand so, als wäre der Block des Eintrags nie beendet worden (Start und Pause bleiben erhalten). */
+    fun resumeFromEntry(
+        state: ActiveStateEntity,
+        entry: WorkTimeEntryEntity
+    ): ActiveStateEntity {
+        return state.copy(
+            isTracking = true,
+            activeStartEpochMillis = entry.startEpochMillis,
+            isBreakRunning = false,
+            breakStartEpochMillis = null,
+            accumulatedBreakMinutes = entry.breakMinutes,
+            insideGeofence = true
         )
     }
 
@@ -82,13 +116,15 @@ object WorkSessionManager {
         comment: String
     ): Pair<ActiveStateEntity, WorkTimeEntryEntity?> {
         val activeStart = state.activeStartEpochMillis
+        // Nur ein Geofence-EXIT bedeutet "nicht mehr am Arbeitsplatz"; Stop/Tagesabschluss ändern die Anwesenheit nicht.
+        val insideAfterStop = if (source == TrackingSource.Geofence) false else state.insideGeofence
 
         if (!state.isTracking || activeStart == null) {
             return state.copy(
                 isTracking = false,
                 isBreakRunning = false,
                 breakStartEpochMillis = null,
-                insideGeofence = false
+                insideGeofence = insideAfterStop
             ) to null
         }
 
@@ -125,7 +161,7 @@ object WorkSessionManager {
             isBreakRunning = false,
             breakStartEpochMillis = null,
             accumulatedBreakMinutes = 0,
-            insideGeofence = false
+            insideGeofence = insideAfterStop
         )
 
         return newState to entry

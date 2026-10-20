@@ -12,6 +12,9 @@ interface WorkTimeDao {
     @Query("SELECT * FROM work_time_entries ORDER BY startEpochMillis DESC")
     fun observeEntries(): Flow<List<WorkTimeEntryEntity>>
 
+    @Query("SELECT * FROM work_time_entries ORDER BY endEpochMillis DESC LIMIT 1")
+    suspend fun getLastEntry(): WorkTimeEntryEntity?
+
     @Insert
     suspend fun insertEntry(entry: WorkTimeEntryEntity): Long
 
