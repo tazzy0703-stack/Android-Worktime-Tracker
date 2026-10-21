@@ -105,6 +105,7 @@ fun MatrixHeader(
     Text(
         text = text,
         style = MaterialTheme.typography.titleLarge,
+        fontSize = 19.sp,
         color = MatrixGreen
     )
 }
@@ -115,6 +116,7 @@ fun MatrixText(
 ) {
     Text(
         text = text,
-        color = MatrixText
+        color = MatrixText,
+        fontSize = 13.sp
     )
 }

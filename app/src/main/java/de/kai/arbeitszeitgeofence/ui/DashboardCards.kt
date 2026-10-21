@@ -9,7 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 
 @Composable
@@ -134,12 +136,21 @@ fun DashboardKpiCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
 
-            MatrixHeader(title)
+            Text(
+                text = title,
+                color = MatrixGreen,
+                style = MaterialTheme.typography.titleMedium,
+                fontSize = 16.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Text(
                 text = value,
                 color = color,
-                style = MaterialTheme.typography.headlineSmall
+                style = MaterialTheme.typography.headlineSmall,
+                fontSize = 21.sp,
+                maxLines = 1
             )
         }
     }

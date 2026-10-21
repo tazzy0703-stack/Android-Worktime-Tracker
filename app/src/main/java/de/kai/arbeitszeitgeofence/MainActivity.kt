@@ -71,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import de.kai.arbeitszeitgeofence.ui.MatrixGreen
 import de.kai.arbeitszeitgeofence.ui.MatrixMutedText
@@ -596,6 +597,7 @@ private fun PeriodSummaryCard(
             Text(
                 text = "Zusammenfassung ${view.label}",
                 style = MaterialTheme.typography.titleLarge,
+                fontSize = 19.sp,
                 color = MatrixGreen
             )
 
@@ -637,37 +639,30 @@ private fun PeriodSummaryCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     DashboardKpiCard(
-                        title = "Gutschrift",
-                        value = formatMinutes(summary.creditedMinutes)
-                    )
-                }
-
-                Box(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    DashboardKpiCard(
                         title = "Soll",
                         value = formatMinutes(summary.targetMinutes)
                     )
                 }
-            }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
                 Box(modifier = Modifier.weight(1f)) {
                     DashboardKpiCard(title = "Pause", value = formatMinutes(summary.breakMinutes))
-                }
-                Box(modifier = Modifier.weight(1f)) {
-                    DashboardKpiCard(title = "Gutschrift-Tage", value = summary.paidAbsenceDayCount.toString())
                 }
             }
 
             Text(
                 text = "Tage: ${summary.dayCount} | Arbeitstage: ${summary.regularWorkdayCount} | Sondertage: ${summary.overrideCount}",
-                color = MatrixText
+                color = MatrixText,
+                fontSize = 13.sp
             )
+
+            // Bezahlte Abwesenheit (Urlaub/Feiertag/Krank) ist im Soll bereits ausgeglichen; nur anzeigen, wenn vorhanden.
+            if (summary.creditedMinutes > 0) {
+                Text(
+                    text = "Davon gutgeschrieben: ${formatMinutes(summary.creditedMinutes)} an ${summary.paidAbsenceDayCount} Tag(en) Urlaub/Feiertag/Krank",
+                    color = MatrixMutedText,
+                    fontSize = 13.sp
+                )
+            }
         }
     }
 }
