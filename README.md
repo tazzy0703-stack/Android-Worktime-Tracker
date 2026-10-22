@@ -1,6 +1,6 @@
 # Arbeitszeit Geofence
 
-Private Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence.
+Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence. Open Source unter der [MIT-Lizenz](LICENSE), Nutzung ohne Gewähr (siehe [Lizenz und Haftungsausschluss](#lizenz-und-haftungsausschluss--license-and-disclaimer)).
 
 > **Letzter veröffentlichter Release:** [`v1.5.0`](https://github.com/tazzy0703-stack/Android-Worktime-Tracker/releases/tag/v1.5.0)
 > **Plattform:** Android 14 oder neuer (minSdk 34)
@@ -67,12 +67,38 @@ Für einen manuellen Lauf: Repository → **Actions** → **Android APK** → **
 
 Kotlin, Jetpack Compose, Room, Google Play Services Geofencing, Android Foreground Service, WorkManager und OpenStreetMap/osmdroid.
 
-## Datenschutz und Nutzung
+## Datenschutz
 
-Arbeitszeit- und Planungseinträge werden lokal auf dem Gerät gespeichert. Für die Kartenansicht werden OpenStreetMap-Kacheln über das Internet geladen. Die App ist privat und wird ohne Open-Source-Lizenz veröffentlicht.
+Arbeitszeit- und Planungseinträge werden lokal auf dem Gerät gespeichert. Es gibt kein Benutzerkonto und keine Übertragung von Arbeitszeit- oder Standortdaten an einen Server des Autors. Für die Kartenansicht werden OpenStreetMap-Kacheln über das Internet geladen; Kartendaten © [OpenStreetMap-Mitwirkende](https://www.openstreetmap.org/copyright) (ODbL).
+
+## Lizenz und Haftungsausschluss / License and Disclaimer
+
+Dieses Projekt steht unter der [MIT-Lizenz](LICENSE). / This project is licensed under the [MIT License](LICENSE).
+
+### Deutsch (unverbindliche Übersetzung)
+
+Copyright (c) 2026 Kai Becker
+
+Die Software wird unter der MIT-Lizenz bereitgestellt. Maßgeblich ist ausschließlich der englische Originaltext in der Datei [LICENSE](LICENSE); die folgende Übersetzung dient nur dem Verständnis.
+
+**Die Software wird „WIE BESEHEN“ (AS IS) bereitgestellt, ohne jegliche ausdrückliche oder stillschweigende Gewährleistung, einschließlich, aber nicht beschränkt auf die Gewährleistung der Marktgängigkeit, der Eignung für einen bestimmten Zweck und der Nichtverletzung von Rechten Dritter. In keinem Fall haften die Autoren oder Urheberrechtsinhaber für Ansprüche, Schäden oder sonstige Haftung, sei es aus Vertrag, unerlaubter Handlung oder anderweitig, die sich aus der Software, ihrer Nutzung oder sonstigem Umgang mit ihr ergeben oder damit in Zusammenhang stehen.**
+
+Die Nutzung erfolgt auf eigene Verantwortung. Insbesondere übernimmt der Autor keine Gewähr für die Richtigkeit, Vollständigkeit oder Rechtsverbindlichkeit der erfassten Arbeitszeiten; die App ersetzt keinen gesetzlichen oder betrieblichen Arbeitszeitnachweis. Die automatische Erkennung über Geofences kann ausfallen oder sich verzögern (siehe Hinweise zur Installation). Soweit zwingendes Recht eine Haftung vorschreibt, bleibt diese unberührt.
+
+### English
+
+Copyright (c) 2026 Kai Becker
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, subject to the conditions in the [LICENSE](LICENSE) file.
 
 ```text
-Copyright (c) 2026 Kai Becker.
-All rights reserved.
-Source code is private and not licensed for redistribution or public use.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
+
+Use at your own risk. The author makes no guarantee that recorded working times are correct, complete or legally binding; the app is not a substitute for any statutory or company time record. Geofence-based detection may fail or be delayed.
