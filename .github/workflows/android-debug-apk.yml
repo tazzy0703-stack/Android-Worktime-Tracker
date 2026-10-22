@@ -3,9 +3,13 @@ name: Android APK
 on:
   push:
     branches: [ main, 'fix/**' ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-apk:
@@ -74,3 +78,14 @@ jobs:
           name: ArbeitszeitGeofence-release-apk
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/v') && env.HAS_RELEASE_SIGNING == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk "ArbeitszeitGeofence-${GITHUB_REF_NAME}.apk"
+          gh release create "$GITHUB_REF_NAME" "ArbeitszeitGeofence-${GITHUB_REF_NAME}.apk" \
+            --title "Arbeitszeit Geofence ${GITHUB_REF_NAME}" \
+            --notes-file ".github/release-notes/${GITHUB_REF_NAME}.md" \
+            --latest

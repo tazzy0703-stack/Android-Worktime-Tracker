@@ -2,10 +2,16 @@
 
 Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence. Open Source unter der [MIT-Lizenz](LICENSE), Nutzung ohne Gewähr (siehe [Lizenz und Haftungsausschluss](#lizenz-und-haftungsausschluss--license-and-disclaimer)).
 
-> **Letzter veröffentlichter Release:** [`v1.5.0`](https://github.com/tazzy0703-stack/Android-Worktime-Tracker/releases/tag/v1.5.0)
+> **Letzter Release:** [`v1.6.0`](https://github.com/tazzy0703-stack/Android-Worktime-Tracker/releases/tag/v1.6.0)
 > **Plattform:** Android 14 oder neuer (minSdk 34)
 > **Distribution:** APK über GitHub Releases
-> **Aktueller Stand auf `main`:** Version 1.6.0 (siehe [Änderungen gegenüber v1.5.0](#änderungen-gegenüber-v150)); im Alltagstest des Autors bisher stabil.
+> **Projektstatus:** abgeschlossen, keine Weiterentwicklung (siehe [Projektstatus](#projektstatus--project-status))
+
+## Projektstatus / Project status
+
+**Deutsch:** Dieses Projekt ist **abgeschlossen**. Die App deckt meinen Bedarf vollständig ab, ich entwickle sie nicht weiter und pflege sie nicht. Es gibt keinen Support, und Issues und Pull Requests werden nicht bearbeitet. Wer die App braucht oder anpassen möchte, kann sie unter den Bedingungen der [MIT-Lizenz](LICENSE) frei nutzen, **forken** und auf eigene Verantwortung selbst weiterentwickeln.
+
+**English:** This project is **finished**. The app covers my needs completely; I will not develop or maintain it further. There is no support, and issues and pull requests will not be handled. Anyone who needs or wants to change it may use it freely under the [MIT License](LICENSE), **fork** it and continue at their own risk.
 
 ## Funktionen
 
@@ -41,7 +47,7 @@ Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence. Open Sou
 
 ## Änderungen gegenüber v1.5.0
 
-Stand `main`, Version 1.6.0 (Build über GitHub Actions, noch nicht als Release veröffentlicht):
+Version 1.6.0:
 
 - **Tagesabschluss:** Datum und Endzeit richten sich nach dem geplanten Abschlusszeitpunkt. Läuft der Hintergrundjob verzögert (Energiesparmodus, nach Mitternacht), wird nicht mehr der Folgetag abgeschlossen.
 - **Hintergrunddienst:** Aktionen laufen nacheinander und sind gegen fehlende Standortberechtigung und Hintergrundstart-Beschränkungen abgesichert; Eintrag und Zustand werden gemeinsam gespeichert.
