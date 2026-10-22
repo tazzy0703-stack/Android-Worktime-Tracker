@@ -5,7 +5,7 @@ Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence. Open Sou
 > **Letzter veröffentlichter Release:** [`v1.5.0`](https://github.com/tazzy0703-stack/Android-Worktime-Tracker/releases/tag/v1.5.0)
 > **Plattform:** Android 14 oder neuer (minSdk 34)
 > **Distribution:** APK über GitHub Releases
-> **Status:** Die Überarbeitung auf dem Branch `fix/geofence-review` (siehe [Änderungen gegenüber v1.5.0](#änderungen-gegenüber-v150)) wird im Alltag getestet, bevor sie nach `main` und in einen Release übernommen wird.
+> **Aktueller Stand auf `main`:** Version 1.6.0 (siehe [Änderungen gegenüber v1.5.0](#änderungen-gegenüber-v150)); im Alltagstest des Autors bisher stabil.
 
 ## Funktionen
 
@@ -41,15 +41,15 @@ Android-App zur lokalen Arbeitszeiterfassung mit Arbeitsplatz-Geofence. Open Sou
 
 ## Änderungen gegenüber v1.5.0
 
-Stand Branch `fix/geofence-review` (noch nicht in einem Release):
+Stand `main`, Version 1.6.0 (Build über GitHub Actions, noch nicht als Release veröffentlicht):
 
 - **Tagesabschluss:** Datum und Endzeit richten sich nach dem geplanten Abschlusszeitpunkt. Läuft der Hintergrundjob verzögert (Energiesparmodus, nach Mitternacht), wird nicht mehr der Folgetag abgeschlossen.
 - **Hintergrunddienst:** Aktionen laufen nacheinander und sind gegen fehlende Standortberechtigung und Hintergrundstart-Beschränkungen abgesichert; Eintrag und Zustand werden gemeinsam gespeichert.
 - **Geofence:** keine unnötige Neuregistrierung bei jedem App-Start, Wiederholung der Wiederherstellung mit Backoff, Anwesenheitsabgleich beim Öffnen der App.
 - **Sicherheit/Konfiguration:** der Wiederherstellungs-Receiver ist nicht mehr exportiert; das Room-Schema wird exportiert (`app/schemas`), damit künftige Datenbankänderungen migrierbar sind.
-- **Oberfläche:** einheitliches 2×2-Raster der Kennzahlen, die Karte „Gutschrift-Tage“ entfällt, Dashboard-Schriften sind kleiner.
+- **Oberfläche:** einheitliches 2×2-Raster der Kennzahlen, die Karte „Gutschrift-Tage“ entfällt, Dashboard-Schriften sind kleiner, die Quellenangabe „© OpenStreetMap contributors“ wird wieder auf der Karte angezeigt.
 
-Die Änderungen sind per Build und Unit-Tests geprüft, das Verhalten am Gerät (insbesondere Verlassen/Betreten, Neustart, Tagesabschluss über Mitternacht) wird im Alltagstest bestätigt.
+Die Änderungen sind per Build und Unit-Tests geprüft. Das Verhalten am Gerät (Verlassen/Betreten, Neustart) wurde vom Autor im Alltag getestet; der Tagesabschluss über Mitternacht und die Randfälle der Wiederaufnahme sind nicht gesondert abgesichert.
 
 ## Installation
 

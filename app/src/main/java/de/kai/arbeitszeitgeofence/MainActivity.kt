@@ -97,6 +97,7 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
 import org.osmdroid.views.overlay.Polygon
@@ -1401,6 +1402,8 @@ private fun DayOverrideSettingsCard(
         map.overlays.add(Polygon(map).apply { points = Polygon.pointsAsCircle(center, radius.toDouble()); fillColor = 0x3333B5E5; strokeColor = 0xFF0288D1.toInt(); strokeWidth = 4f })
         map.overlays.add(Marker(map).apply { position = center; title = "Arbeitsplatz"; setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM) })
         map.overlays.add(LongPressOverlay { point -> saveMarkerFromMap(dao, settings, point, onMessage) })
+        // Pflichtangabe der OSM-Nutzungsbedingungen: Quelle der Kacheln sichtbar auf der Karte (Text kommt aus der Kachelquelle).
+        map.overlays.add(CopyrightOverlay(map.context))
         map.invalidate()
     }
 
